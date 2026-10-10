@@ -1,0 +1,2093 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>TP1 Git et GitHub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout concept: a left rail (progress + part index) beside a lab sheet; every part is a run of checkable steps; the sandbox pairs a fake terminal with a live commit graph. */
+:root {
+  --bg: #F2F4F7; --surface: #FFFFFF; --surface-2: #E8ECF2; --ink: #0F1A2B; --muted: #56627A; --line: #D3DAE5;
+  --accent: #C4311A; --accent-fill: #D9391F; --on-accent: #FFFFFF; --accent-soft: #FCE8E3;
+  --ok: #0B7A5E; --ok-soft: #DAF2EA; --warn: #8A4F00; --warn-soft: #FFF0D2; --info: #2352BE; --info-soft: #E2EAFB;
+  --code-bg: #0F1A2B; --code-fg: #E6EDF7; --code-mute: #8A97AD; --code-prompt: #6FD6AE; --code-ph: #FFC86B; --code-line: #22314A;
+  --l0: #D9391F; --l1: #0B8F6C; --l2: #7C4DDB; --l3: #C27A00;
+  --f-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --f-body: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B121C; --surface: #121B28; --surface-2: #1A2535; --ink: #E8EEF7; --muted: #9AA8BF; --line: #263447;
+    --accent: #FF7A5F; --accent-fill: #FF6A4D; --on-accent: #1A0A07; --accent-soft: #3A1E1A;
+    --ok: #3CCB9F; --ok-soft: #12332B; --warn: #F2B04A; --warn-soft: #3A2C10; --info: #8AAEFF; --info-soft: #182548;
+    --code-bg: #070C13; --code-fg: #E6EDF7; --code-mute: #7E8CA3; --code-prompt: #6FD6AE; --code-ph: #FFC86B; --code-line: #1B2638;
+    --l0: #FF6A4D; --l1: #3CCB9F; --l2: #A98BFF; --l3: #F2B04A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B121C; --surface: #121B28; --surface-2: #1A2535; --ink: #E8EEF7; --muted: #9AA8BF; --line: #263447;
+  --accent: #FF7A5F; --accent-fill: #FF6A4D; --on-accent: #1A0A07; --accent-soft: #3A1E1A;
+  --ok: #3CCB9F; --ok-soft: #12332B; --warn: #F2B04A; --warn-soft: #3A2C10; --info: #8AAEFF; --info-soft: #182548;
+  --code-bg: #070C13; --code-fg: #E6EDF7; --code-mute: #7E8CA3; --code-prompt: #6FD6AE; --code-ph: #FFC86B; --code-line: #1B2638;
+  --l0: #FF6A4D; --l1: #3CCB9F; --l2: #A98BFF; --l3: #F2B04A;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--f-body); padding-inline: 16px; padding-block: 20px 56px; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+h1, h2, h3, h4 { font-family: var(--f-display); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--accent); text-underline-offset: 2px; }
+code { font-family: var(--f-mono); font-size: 0.86em; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 0.05em 0.35em; overflow-wrap: anywhere; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Shell */
+.shell { max-width: 1240px; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 980px) { .shell { grid-template-columns: 264px minmax(0, 1fr); gap: 40px; } }
+main { min-width: 0; display: flex; flex-direction: column; gap: 48px; }
+
+/* Rail */
+#rail { min-width: 0; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); margin-inline: -16px; padding: 8px 16px 0; border-bottom: 1px solid var(--line); }
+.rail-head { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; }
+.ring { width: 44px; height: 44px; flex: none; }
+.ring circle { fill: none; stroke-width: 5; }
+.ring .bg { stroke: var(--surface-2); }
+.ring .fg { stroke: var(--accent-fill); stroke-linecap: round; transition: stroke-dashoffset .4s ease; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.rail-head b { display: block; font-family: var(--f-display); font-size: 1.05rem; line-height: 1.1; }
+.rail-head small { color: var(--muted); font-size: .8rem; }
+.rail-tools { margin-left: auto; display: flex; gap: 6px; }
+.tbtn { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: .78rem; color: var(--muted); }
+.tbtn:hover { color: var(--ink); border-color: var(--muted); }
+.rail-list { list-style: none; margin: 0; padding: 0 0 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+.rail-list a { display: flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none; color: var(--muted); font-size: .85rem; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+.rail-list a[aria-current="true"] { color: var(--on-accent); background: var(--accent-fill); border-color: var(--accent-fill); }
+.rail-list .cnt { font-family: var(--f-mono); font-size: .72rem; opacity: .85; }
+.rail-list .l-long { display: none; }
+.rail-list li.done a:not([aria-current="true"]) { color: var(--ok); border-color: var(--ok); }
+@media (min-width: 980px) {
+  #rail { margin-inline: 0; padding: 0; border: 0; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; background: transparent; }
+  .rail-head { padding: 0 0 16px; }
+  .rail-list { flex-direction: column; overflow: visible; gap: 2px; padding: 0; border-top: 1px solid var(--line); padding-top: 12px; }
+  .rail-list a { border: 0; background: transparent; border-radius: 8px; padding: 7px 10px; justify-content: space-between; white-space: normal; font-size: .9rem; }
+  .rail-list a:hover { background: var(--surface-2); color: var(--ink); }
+  .rail-list .l-long { display: inline; }
+  .rail-list .l-short { display: none; }
+  .rail-list li.sep { margin-top: 14px; padding: 0 10px; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .rail-list li.done a:not([aria-current="true"]) { background: transparent; }
+}
+@media (max-width: 979px) { .rail-list li.sep { display: none; } }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: center; padding-top: 12px; }
+@media (min-width: 760px) { .hero { grid-template-columns: minmax(0, 1fr) 300px; } }
+.eyebrow { font-size: .78rem; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); font-weight: 600; }
+.hero h1 { font-size: clamp(2rem, 5.2vw, 3.3rem); margin-top: 10px; }
+.hero h1 span { color: var(--accent); }
+.lead { font-size: 1.1rem; color: var(--muted); margin-top: 16px; max-width: 62ch; }
+.pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pill { font-size: .8rem; padding: 4px 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.hero svg { width: 100%; max-width: 300px; height: auto; justify-self: center; }
+
+/* Sections */
+.sec-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.sec-head .eyebrow { font-family: var(--f-mono); letter-spacing: .06em; }
+.sec-head h2 { font-size: clamp(1.55rem, 3.4vw, 2.1rem); }
+.sec-head p { color: var(--muted); max-width: 66ch; }
+section { scroll-margin-top: 110px; min-width: 0; }
+@media (min-width: 980px) { section { scroll-margin-top: 24px; } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; min-width: 0; }
+.rich p + p, .rich p + ul, .rich ul + p { margin-top: .7em; }
+.rich ul { margin: 0; padding-left: 1.2em; }
+.rich li + li { margin-top: .3em; }
+
+/* Personalisation */
+.me form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 14px; }
+.me label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); }
+.me input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; color: var(--ink); font-size: .95rem; min-width: 0; }
+.me input:focus-visible { outline-offset: 0; border-color: var(--accent); }
+.me .fine { font-size: .82rem; color: var(--muted); margin-top: 12px; }
+
+/* Concepts */
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.duo .card h3 { font-size: 1.25rem; margin-bottom: 8px; }
+.tag { display: inline-block; font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px; border-radius: 6px; background: var(--surface-2); color: var(--muted); margin-bottom: 10px; }
+.sub { margin-top: 32px; }
+.sub > h3 { font-size: 1.3rem; margin-bottom: 6px; }
+.sub > p.hint { color: var(--muted); margin-bottom: 14px; max-width: 66ch; }
+.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.flow li { display: flex; flex-direction: column; align-items: stretch; }
+.flow .stage { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.flow .stage b { display: block; font-family: var(--f-display); font-size: 1.02rem; }
+.flow .stage span { color: var(--muted); font-size: .82rem; }
+.flow .stage[aria-pressed="true"] { border-color: var(--accent-fill); box-shadow: 0 0 0 2px var(--accent-soft); }
+.flow .conn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 0; color: var(--muted); font-family: var(--f-mono); font-size: .8rem; }
+.flow .conn i { font-style: normal; font-size: 1.1rem; color: var(--accent); display: inline-block; transform: rotate(90deg); }
+@media (min-width: 860px) {
+  .flow { flex-direction: row; align-items: stretch; }
+  .flow li.st { flex: 1 1 0; display: flex; }
+  .flow li.st .stage { flex: 1; }
+  .flow li.cn { flex: 0 0 auto; display: flex; align-items: center; }
+  .flow .conn { flex-direction: column; padding: 0 6px; gap: 2px; }
+  .flow .conn i { transform: none; }
+}
+.flow-panel { margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
+.flow-panel .back { font-size: .86rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 10px; }
+.glos-tools { display: flex; gap: 10px; margin-bottom: 12px; }
+.glos-tools input, .tools input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; color: var(--ink); }
+.glos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.glos li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; min-width: 0; }
+.glos b { font-family: var(--f-display); display: block; margin-bottom: 2px; }
+.glos span { color: var(--muted); font-size: .92rem; }
+.empty-msg { color: var(--muted); padding: 10px 2px; }
+.mini { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.mini th, .mini td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mini th { font-size: .75rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+
+/* Code blocks */
+.code { margin: 10px 0 0; background: var(--code-bg); color: var(--code-fg); border-radius: 10px; overflow: hidden; min-width: 0; border: 1px solid var(--code-line); }
+.code figcaption { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 8px 6px 14px; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .04em; color: var(--code-mute); border-bottom: 1px solid var(--code-line); min-height: 34px; }
+.code pre { margin: 0; padding: 12px 14px; overflow-x: auto; font: 400 .86rem/1.65 var(--f-mono); tab-size: 4; }
+.code code { background: none; border: 0; padding: 0; font: inherit; color: inherit; overflow-wrap: normal; }
+.code .ln { display: block; white-space: pre; }
+.code .ln.cmd::before { content: "$ "; color: var(--code-prompt); user-select: none; }
+.code .ln.cm { color: var(--code-mute); }
+.code .ln.blank { height: .8em; }
+.code.k-out { border-style: dashed; background: transparent; color: var(--ink); }
+.code.k-out { background: var(--surface-2); border-color: var(--line); }
+.code.k-out figcaption { color: var(--muted); border-color: var(--line); }
+.code.k-file figcaption { color: var(--code-fg); }
+.copy { background: transparent; border: 1px solid var(--code-line); color: var(--code-fg); border-radius: 7px; padding: 3px 10px; font: 500 .74rem var(--f-body); }
+.copy:hover { border-color: var(--code-mute); }
+.copy.ok { color: var(--code-prompt); border-color: var(--code-prompt); }
+.ph { border-bottom: 1px dashed currentColor; }
+.code .ph.on { color: var(--code-ph); border-bottom-style: solid; }
+.rich .ph.on, .note .ph.on { color: var(--accent); border-bottom-style: solid; }
+
+/* Parts */
+.part { min-width: 0; }
+.learn { background: var(--info-soft); border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; }
+.learn h3 { font-family: var(--f-body); font-size: .74rem; text-transform: uppercase; letter-spacing: .09em; color: var(--info); font-weight: 600; margin-bottom: 8px; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: s; }
+.step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; transition: border-color .2s; }
+.step.done { border-color: var(--ok); }
+.chk { position: relative; width: 34px; height: 34px; flex: none; cursor: pointer; }
+.chk input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; width: 100%; height: 100%; }
+.chk .num { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; border: 1.5px solid var(--line); font: 600 .85rem var(--f-mono); color: var(--muted); background: var(--bg); transition: background .15s, border-color .15s; }
+.chk input:hover + .num { border-color: var(--accent); }
+.chk input:focus-visible + .num { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chk input:checked + .num { background: var(--ok); border-color: var(--ok); color: transparent; position: relative; }
+.chk input:checked + .num::after { content: ""; position: absolute; width: 10px; height: 18px; border: solid var(--bg); border-width: 0 3px 3px 0; transform: rotate(45deg) translate(-1px, -2px); }
+.step .body { min-width: 0; }
+.step .t { font-weight: 500; }
+.step.done .t { color: var(--muted); }
+.t .rich, .t p { display: block; }
+.note { margin-top: 10px; padding: 10px 12px; border-radius: 10px; font-size: .92rem; background: var(--surface-2); }
+.note .k { display: block; margin-bottom: 3px; font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.note.info { background: var(--info-soft); } .note.info .k { color: var(--info); }
+.note.warn { background: var(--warn-soft); } .note.warn .k { color: var(--warn); }
+.note.tip { background: var(--ok-soft); } .note.tip .k { color: var(--ok); }
+.note.up { background: var(--accent-soft); } .note.up .k { color: var(--accent); }
+.note .rich { min-width: 0; }
+details.why, details.q { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+details > summary { cursor: pointer; padding: 9px 12px; font-size: .92rem; font-weight: 500; list-style: none; display: flex; gap: 8px; align-items: baseline; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "+"; font-family: var(--f-mono); color: var(--accent); width: 1ch; flex: none; }
+details[open] > summary::before { content: "−"; }
+details > .in { padding: 0 14px 12px 32px; font-size: .94rem; color: var(--ink); }
+details.q > summary b { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--info); font-weight: 600; }
+.trouble { margin-top: 18px; }
+.trouble > summary { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+
+/* Widgets inside steps */
+.tabs { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.tablist { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+.tablist button { flex: 1 0 auto; padding: 10px 14px; background: transparent; border: 0; border-bottom: 3px solid transparent; font-size: .9rem; color: var(--muted); white-space: nowrap; }
+.tablist button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent-fill); background: var(--surface); font-weight: 600; }
+.tabpanel { padding: 14px 16px; }
+.tabpanel[hidden] { display: none; }
+.conf { margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.conf-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: .85rem; color: var(--muted); }
+.conf-code { background: var(--code-bg); color: var(--code-fg); font: 400 .84rem/1.7 var(--f-mono); padding: 10px 0; overflow-x: auto; }
+.conf-code .cl { display: block; white-space: pre; padding: 0 14px; }
+.conf-code .mk { color: var(--code-mute); }
+.conf-code .cur { background: rgba(60, 203, 159, .16); }
+.conf-code .inc { background: rgba(138, 174, 255, .18); }
+.conf-code .res { background: rgba(255, 200, 107, .14); }
+.conf-act { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.btn { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 7px 12px; font-size: .88rem; font-weight: 500; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); }
+.conf-msg { padding: 10px 14px; font-size: .92rem; border-top: 1px solid var(--line); }
+
+/* Lab */
+.lab-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+@media (min-width: 1280px) { .lab-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); } }
+.missions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; list-style: none; }
+.missions li { font-size: .85rem; padding: 5px 12px 5px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.missions li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.missions li.on { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+.missions li.on::before { background: var(--ok); border-color: var(--ok); }
+.term { background: var(--code-bg); color: var(--code-fg); border-radius: 12px; border: 1px solid var(--code-line); display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.term-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px 6px 14px; border-bottom: 1px solid var(--code-line); font: .72rem var(--f-mono); color: var(--code-mute); }
+.term-out { height: 330px; overflow: auto; padding: 12px 14px; font: .83rem/1.6 var(--f-mono); }
+.term-out .c { color: var(--code-fg); white-space: pre-wrap; overflow-wrap: anywhere; }
+.term-out .c::before { content: "$ "; color: var(--code-prompt); }
+.term-out .o { color: var(--code-mute); white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 8px; }
+.term-out .o.sys { color: var(--code-ph); }
+.term-in { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; border-top: 1px solid var(--code-line); }
+.term-in span { color: var(--code-prompt); font: .86rem var(--f-mono); }
+.term-in input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--code-fg); font: .86rem var(--f-mono); padding: 6px 0; }
+.term-in input:focus-visible { outline: none; }
+.term-in:focus-within { box-shadow: inset 0 0 0 1.5px var(--code-prompt); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px 10px; border-top: 1px solid var(--code-line); }
+.chips button { background: transparent; border: 1px solid var(--code-line); color: var(--code-fg); border-radius: 7px; padding: 4px 9px; font: .76rem var(--f-mono); }
+.chips button:hover { border-color: var(--code-prompt); }
+.chips button.edit { background: var(--accent-fill); color: var(--on-accent); border-color: var(--accent-fill); font-family: var(--f-body); font-weight: 600; }
+.viz { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.zone { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.zone h4 { font-size: .95rem; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.zone h4 small { font: 500 .7rem var(--f-mono); color: var(--muted); }
+.zone .fl { font: .78rem/1.55 var(--f-mono); white-space: pre; overflow-x: auto; padding: 0 4px; border-radius: 4px; }
+.zone .fl.chg { background: var(--warn-soft); color: var(--warn); }
+.zone .fl.stg { background: var(--ok-soft); color: var(--ok); }
+.zone .none { color: var(--muted); font-size: .85rem; padding-top: 4px; }
+.zone .body { margin-top: 8px; display: flex; flex-direction: column; }
+.repo { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+.repo h4 { font-size: .95rem; }
+.graph { overflow-x: auto; margin-top: 6px; }
+.graph svg { display: block; }
+.graph .empty { color: var(--muted); font-size: .88rem; padding: 14px 4px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .78rem; color: var(--muted); margin-top: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* Quiz */
+.quiz { display: grid; gap: 14px; }
+.qcard { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+.qcard h3 { font-family: var(--f-body); font-weight: 600; font-size: 1rem; letter-spacing: 0; margin-bottom: 10px; }
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; min-width: 0; overflow-wrap: anywhere; }
+.opt:hover { border-color: var(--accent); }
+.opt.right { border-color: var(--ok); background: var(--ok-soft); }
+.opt.wrong { border-color: var(--warn); background: var(--warn-soft); }
+.qfb { margin-top: 10px; font-size: .92rem; color: var(--muted); }
+.score { font-family: var(--f-display); font-size: 1.1rem; margin-top: 4px; }
+.cmdcell code { white-space: normal; }
+footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); padding-top: 18px; }
+</style>
+
+<div class="shell">
+  <nav id="rail" aria-label="Plan du TP">
+    <div class="rail-head">
+      <svg class="ring" viewBox="0 0 50 50" aria-hidden="true"><circle class="bg" cx="25" cy="25" r="21"></circle><circle class="fg" id="ring" cx="25" cy="25" r="21" stroke-dasharray="131.95" stroke-dashoffset="131.95"></circle></svg>
+      <div><b id="pct">0 %</b><small id="cnt">0 / 0 étapes</small></div>
+      <div class="rail-tools">
+        <button class="tbtn" id="theme" type="button" aria-label="Changer de thème, actuellement automatique">Auto</button>
+        <button class="tbtn" id="resetp" type="button" aria-label="Remettre la progression à zéro" title="Remettre la progression à zéro">Effacer</button>
+      </div>
+    </div>
+    <ul class="rail-list" id="railist"></ul>
+  </nav>
+
+  <main id="main">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">ISIMM · MP2 SD · DevOps pour la SD</div>
+        <h1>TP n°1 <span>Git et GitHub</span></h1>
+        <p class="lead">Vous allez créer un dépôt, enregistrer des modifications, travailler avec des branches, résoudre un conflit, puis collaborer sur GitHub avec un binôme. Chaque étape se coche, chaque commande se copie, et un bac à sable permet d'expérimenter Git sans rien risquer.</p>
+        <div class="pills"><span class="pill">10 parties</span><span class="pill">Aucun prérequis en Git</span><span class="pill">Windows, macOS et Linux</span></div>
+      </div>
+      <svg viewBox="0 0 300 150" role="img" aria-label="Schéma d'une branche qui part de main puis y est fusionnée">
+        <path d="M30 40H270" stroke="var(--l0)" stroke-width="3" fill="none"/>
+        <path d="M90 40C110 40 110 110 135 110H175C200 110 200 40 220 40" stroke="var(--l1)" stroke-width="3" fill="none"/>
+        <g fill="var(--l0)" stroke="var(--bg)" stroke-width="3"><circle cx="30" cy="40" r="9"/><circle cx="90" cy="40" r="9"/><circle cx="220" cy="40" r="9"/><circle cx="270" cy="40" r="9"/></g>
+        <g fill="var(--l1)" stroke="var(--bg)" stroke-width="3"><circle cx="135" cy="110" r="9"/><circle cx="175" cy="110" r="9"/></g>
+        <g font-family="JetBrains Mono, monospace" font-size="11"><rect x="237" y="2" width="56" height="20" rx="6" fill="var(--ink)"/><text x="265" y="16" text-anchor="middle" fill="var(--bg)">main</text><rect x="125" y="124" width="60" height="20" rx="6" fill="var(--surface)" stroke="var(--line)"/><text x="155" y="138" text-anchor="middle" fill="var(--ink)">test</text></g>
+      </svg>
+    </header>
+
+    <section id="me" class="card me" aria-labelledby="me-h">
+      <h2 id="me-h" style="font-size:1.25rem">Personnalisez vos commandes</h2>
+      <p style="color:var(--muted);margin-top:6px">Renseignez ces champs : les commandes de toute la page s'adaptent, prêtes à être copiées. Ces informations restent dans votre navigateur.</p>
+      <form id="meform" autocomplete="off">
+        <label for="f-nom">Nom (celui de votre compte GitHub)<input id="f-nom" name="nom" type="text" placeholder="VotreNom"></label>
+        <label for="f-email">E-mail (celui de votre compte GitHub)<input id="f-email" name="email" type="text" inputmode="email" placeholder="votre.email@example.com"></label>
+        <label for="f-user">Pseudo GitHub<input id="f-user" name="user" type="text" placeholder="VotreUserGitHub"></label>
+        <label for="f-owner">Pseudo GitHub de votre binôme (Partie 9)<input id="f-owner" name="owner" type="text" placeholder="PseudoDuBinome"></label>
+      </form>
+      <p class="fine">Ne saisissez jamais de mot de passe ni de jeton d'accès sur cette page.</p>
+    </section>
+
+    <div id="slot-pre"></div>
+
+    <section id="concepts" aria-labelledby="c-h">
+      <div class="sec-head"><div class="eyebrow">Comprendre avant de taper</div><h2 id="c-h">Git en quelques minutes</h2>
+        <p>Un logiciel de gestion de versions garde la trace de chaque modification d'un projet : qui a changé quoi, quand et pourquoi. On peut revenir en arrière, comparer deux versions, et travailler à plusieurs sans écraser le travail des autres.</p></div>
+      <div class="duo">
+        <div class="card rich"><span class="tag">Sur votre machine</span><h3>Git</h3><p>Un logiciel installé sur votre ordinateur. Il fonctionne sans connexion Internet et range tout l'historique dans un dossier caché nommé <code>.git</code>.</p></div>
+        <div class="card rich"><span class="tag">En ligne</span><h3>GitHub</h3><p>Un site qui héberge des dépôts Git. Il sert de point de rendez-vous pour l'équipe. GitLab et Bitbucket jouent le même rôle : Git reste le même partout.</p></div>
+        <div class="card rich"><span class="tag">Pourquoi en DevOps</span><h3>Le point de départ</h3><p>Tests automatiques, déploiements, revues de code : tout part d'un dépôt Git. Savoir l'utiliser proprement est la première compétence du métier.</p></div>
+      </div>
+
+      <div class="sub">
+        <h3>Le trajet d'une modification</h3>
+        <p class="hint">Cliquez sur chaque étape. C'est le schéma à garder en tête pendant tout le TP.</p>
+        <ol class="flow" id="flow"></ol>
+        <div class="flow-panel" id="flowpanel" aria-live="polite"></div>
+      </div>
+
+      <div class="sub">
+        <h3>Les commandes du terminal à connaître</h3>
+        <p class="hint">Un terminal est une fenêtre où l'on tape des commandes au lieu de cliquer. Il suffit de six commandes pour ce TP.</p>
+        <div class="tablewrap"><table class="mini">
+          <thead><tr><th>Commande</th><th>Ce qu'elle fait</th><th>Exemple</th></tr></thead>
+          <tbody>
+            <tr><td><code>pwd</code></td><td>Affiche le dossier où vous vous trouvez</td><td><code>pwd</code></td></tr>
+            <tr><td><code>ls</code></td><td>Liste les fichiers (<code>ls -a</code> montre aussi les fichiers cachés)</td><td><code>ls -a</code></td></tr>
+            <tr><td><code>cd</code></td><td>Entre dans un dossier (<code>cd ..</code> remonte d'un niveau)</td><td><code>cd TP1-Git</code></td></tr>
+            <tr><td><code>mkdir</code></td><td>Crée un dossier</td><td><code>mkdir teamWork</code></td></tr>
+            <tr><td><code>cat</code></td><td>Affiche le contenu d'un fichier</td><td><code>cat myinfo.py</code></td></tr>
+            <tr><td><code>cp</code></td><td>Copie un fichier</td><td><code>cp ../TP1-Git/myinfo.py .</code></td></tr>
+          </tbody></table></div>
+      </div>
+
+      <div class="sub">
+        <h3>Vocabulaire</h3>
+        <p class="hint">Les mots que vous allez croiser. Revenez ici dès qu'un terme vous échappe.</p>
+        <div class="glos-tools"><label class="sr" for="gq">Filtrer le vocabulaire</label><input id="gq" type="search" placeholder="Filtrer : branche, commit, origin…"></div>
+        <ul class="glos" id="glos"></ul>
+        <p class="empty-msg" id="gnone" hidden>Aucun terme ne correspond.</p>
+      </div>
+    </section>
+
+    <section id="lab" aria-labelledby="l-h">
+      <div class="sec-head"><div class="eyebrow">Bac à sable</div><h2 id="l-h">Essayez Git sans risque</h2>
+        <p>Ce terminal simulé comprend les commandes de la Partie 2 à la Partie 5. Tapez-les, ou utilisez les boutons. À droite, voyez les trois zones et l'historique évoluer à chaque commande. Rien ici n'affecte votre ordinateur.</p></div>
+      <div class="card">
+        <ul class="missions" id="missions" aria-label="Missions"></ul>
+        <div class="lab-grid">
+          <div class="term">
+            <div class="term-bar"><span>Terminal simulé · TP1-Git</span><button class="tbtn" id="labreset" type="button" style="background:transparent;border-color:var(--code-line);color:var(--code-fg)">Réinitialiser</button></div>
+            <div class="term-out" id="tout" role="log" aria-live="polite" tabindex="0" aria-label="Sortie du terminal"></div>
+            <form class="term-in" id="tform" autocomplete="off"><label class="sr" for="tin">Commande Git</label><span>$</span><input id="tin" type="text" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="git status"><button class="btn primary" type="submit">Entrer</button></form>
+            <div class="chips" id="chips"></div>
+          </div>
+          <div class="viz">
+            <div class="zones">
+              <div class="zone" id="z-wd"><h4>Répertoire de travail <small id="z-wd-s"></small></h4><div class="body"></div></div>
+              <div class="zone" id="z-idx"><h4>Index <small>zone de transit</small></h4><div class="body"></div></div>
+            </div>
+            <div class="repo"><h4>Dépôt local : l'historique</h4><div class="graph" id="graph"></div>
+              <div class="legend"><span><i style="background:var(--warn-soft);border:1px solid var(--warn)"></i>modifié, pas encore indexé</span><span><i style="background:var(--ok-soft);border:1px solid var(--ok)"></i>indexé, prêt pour le commit</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div id="slot-parts"></div>
+
+    <section id="revision" aria-labelledby="r-h">
+      <div class="sec-head"><div class="eyebrow">Pour finir</div><h2 id="r-h">Révision, aide-mémoire et dépannage</h2>
+        <p>Vérifiez ce que vous avez retenu, puis gardez cette page ouverte : elle vous servira dans les prochains TP.</p></div>
+
+      <div class="sub" style="margin-top:0"><h3>Quiz de révision</h3><p class="hint">Six questions, correction immédiate.</p><div class="quiz" id="quiz"></div><p class="score" id="score" aria-live="polite"></p></div>
+
+      <div class="sub">
+        <h3>Aide-mémoire</h3>
+        <div class="glos-tools"><label class="sr" for="cq">Filtrer les commandes</label><input id="cq" type="search" placeholder="Filtrer : branch, push, merge…"></div>
+        <div class="tablewrap"><table class="mini" id="cheat"><thead><tr><th>Commande</th><th>Rôle</th><th>Partie</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="sub">
+        <h3>Messages d'erreur fréquents</h3>
+        <p class="hint">Un message rouge n'est pas une catastrophe : il dit presque toujours quoi corriger.</p>
+        <div class="glos-tools"><label class="sr" for="eq">Filtrer les erreurs</label><input id="eq" type="search" placeholder="Coller un morceau du message d'erreur…"></div>
+        <div id="errs"></div>
+        <p class="empty-msg" id="enone" hidden>Aucune erreur ne correspond. Relisez le message en entier : la dernière ligne contient souvent la solution.</p>
+      </div>
+    </section>
+
+    <footer>TP conçu par Naoufel KHAYATI et Alaa Eddine BEN HMIDA · ISIMM · MP2 SD · DevOps pour la SD</footer>
+  </main>
+</div>
+<script>
+// ENGINE START
+function createSandbox() {
+  var BASE = ['# Mes informations', 'nom = "Votre Nom"', 'print(nom)'];
+  var POOL = [
+    'print("Je suis etudiant en MP2-SD")',
+    'print("Ceci est mon 1er TP DevOps")',
+    'print("Specialite : Science des Donnees")',
+    'print("Bonjour Git")',
+    'print("Version de test")',
+    'print("Encore une ligne")'
+  ];
+  var ident = { name: 'Votre Nom', email: 'votre.email@example.com' };
+  var s;
+
+  function eq(a, b) {
+    if (!a || !b) return a === b;
+    return a.length === b.length && a.every(function (x, i) { return x === b[i]; });
+  }
+  function has(list, x) { return list.indexOf(x) !== -1; }
+  function hash40(str) {
+    var out = '';
+    var h = 2166136261 >>> 0;
+    for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    for (var k = 0; k < 5; k++) {
+      out += ('00000000' + h.toString(16)).slice(-8);
+      h = Math.imul(h ^ 0x9e3779b9, 2246822519) >>> 0;
+      h = (h ^ (h >>> 15)) >>> 0;
+    }
+    return out;
+  }
+  function reset() {
+    s = { commits: {}, order: [], branches: { main: null }, head: 'main', wd: BASE.slice(), idx: null, seq: 0, edits: 0, events: [] };
+  }
+  function tip(b) { return s.branches[b || s.head]; }
+  function tree(id) { return id ? s.commits[id].tree : null; }
+  function headTree() { return tree(tip()); }
+  function short(id) { return id.slice(0, 7); }
+  function isAncestor(a, b) {
+    if (!a) return true;
+    var seen = {}, st = [b];
+    while (st.length) {
+      var c = st.pop();
+      if (!c || seen[c]) continue;
+      if (c === a) return true;
+      seen[c] = 1;
+      s.commits[c].parents.forEach(function (p) { st.push(p); });
+    }
+    return false;
+  }
+  function isDirty() {
+    if (!s.idx) return false;
+    return !eq(s.idx, headTree()) || !eq(s.wd, s.idx);
+  }
+  function diffCount(oldT, newT) {
+    var o = oldT || [], n = newT || [];
+    var ins = n.filter(function (l) { return !has(o, l); }).length;
+    var del = o.filter(function (l) { return !has(n, l); }).length;
+    return { ins: ins, del: del };
+  }
+  function statLines(oldT, newT) {
+    var d = diffCount(oldT, newT);
+    var plus = '';
+    for (var i = 0; i < d.ins; i++) plus += '+';
+    for (var j = 0; j < d.del; j++) plus += '-';
+    var parts = [];
+    if (d.ins) parts.push(d.ins + (d.ins === 1 ? ' insertion(+)' : ' insertions(+)'));
+    if (d.del) parts.push(d.del + (d.del === 1 ? ' deletion(-)' : ' deletions(-)'));
+    return [' myinfo.py | ' + (d.ins + d.del) + ' ' + plus, ' 1 file changed, ' + parts.join(', ')];
+  }
+  function decorations(id) {
+    var names = [];
+    Object.keys(s.branches).forEach(function (b) { if (s.branches[b] === id) names.push(b); });
+    if (!names.length) return '';
+    names.sort();
+    var headName = s.head;
+    var out = [];
+    if (has(names, headName)) {
+      out.push('HEAD -> ' + headName);
+      names = names.filter(function (n) { return n !== headName; });
+    }
+    return ' (' + out.concat(names).join(', ') + ')';
+  }
+  function fakeDate(seq) {
+    var m = 30 + seq;
+    var mm = ('0' + (m % 60)).slice(-2);
+    var hh = 21 + Math.floor(m / 60);
+    return 'Fri Oct 9 ' + hh + ':' + mm + ':00 2026 +0100';
+  }
+
+  function cmdStatus() {
+    var ht = headTree(), out = [];
+    out.push('On branch ' + s.head);
+    if (!tip()) out.push('', 'No commits yet');
+    var staged = s.idx && !eq(s.idx, ht);
+    var unstaged = s.idx && !eq(s.wd, s.idx);
+    var untracked = !s.idx;
+    if (staged) {
+      out.push('', 'Changes to be committed:');
+      out.push(tip() ? '  (use "git restore --staged <file>..." to unstage)' : '  (use "git rm --cached <file>..." to unstage)');
+      out.push('\t' + (ht ? 'modified:   myinfo.py' : 'new file:   myinfo.py'));
+    }
+    if (unstaged) {
+      out.push('', 'Changes not staged for commit:');
+      out.push('  (use "git add <file>..." to update what will be committed)');
+      out.push('  (use "git restore <file>..." to discard changes in working directory)');
+      out.push('\tmodified:   myinfo.py');
+    }
+    if (untracked) {
+      out.push('', 'Untracked files:');
+      out.push('  (use "git add <file>..." to include in what will be committed)');
+      out.push('\tmyinfo.py');
+    }
+    out.push('');
+    if (!staged) {
+      if (untracked) out.push('nothing added to commit but untracked files present (use "git add" to track)');
+      else if (unstaged) out.push('no changes added to commit (use "git add" and/or "git commit -a")');
+      else out.push('nothing to commit, working tree clean');
+    }
+    return out.join('\n').replace(/\n+$/, '');
+  }
+
+  function cmdAdd(args) {
+    var rest = args.filter(function (a) { return a[0] !== '-' || a === '-A'; });
+    var all = args.indexOf('-A') !== -1 || args.indexOf('--all') !== -1;
+    var targets = rest.filter(function (a) { return a !== '-A'; });
+    if (!targets.length && !all) return 'Nothing specified, nothing added.';
+    for (var i = 0; i < targets.length; i++) {
+      if (targets[i] !== '.' && targets[i] !== 'myinfo.py') return "fatal: pathspec '" + targets[i] + "' did not match any files";
+    }
+    s.idx = s.wd.slice();
+    return '';
+  }
+
+  function cmdCommit(args) {
+    var msg = null, all = false;
+    for (var i = 0; i < args.length; i++) {
+      var a = args[i];
+      if (a === '-m') { msg = args[i + 1] === undefined ? '' : args[i + 1]; i++; }
+      else if (a === '-a') all = true;
+      else if (a === '-am' || a === '-ma') { all = true; msg = args[i + 1] === undefined ? '' : args[i + 1]; i++; }
+      else if (a.indexOf('-m') === 0 && a.length > 2) msg = a.slice(2);
+    }
+    if (all && s.idx && !eq(s.wd, s.idx)) s.idx = s.wd.slice();
+    var ht = headTree();
+    if (!s.idx || eq(s.idx, ht)) {
+      if (!s.idx) return 'On branch ' + s.head + '\n\nnothing added to commit but untracked files present (use "git add" to track)';
+      if (!eq(s.wd, s.idx)) return 'On branch ' + s.head + '\n\nno changes added to commit (use "git add" and/or "git commit -a")';
+      return 'On branch ' + s.head + '\nnothing to commit, working tree clean';
+    }
+    if (msg === null) return 'Dans un vrai terminal, Git ouvrirait un éditeur de texte (vim). Ici, ajoutez le message avec -m :\n  git commit -m "votre message"';
+    if (!msg.trim()) return 'Aborting commit due to empty commit message.';
+    return makeCommit(msg, [tip()].filter(Boolean), s.idx.slice(), true);
+  }
+
+  function makeCommit(msg, parents, treeLines, printStat, mergeNote) {
+    s.seq++;
+    var id = hash40(msg + '|' + s.seq + '|' + parents.join(',') + '|' + treeLines.join('\n'));
+    while (s.commits[id]) id = hash40(id + 'x');
+    var old = headTree();
+    s.commits[id] = { id: id, parents: parents, msg: msg, tree: treeLines, branch: s.head, seq: s.seq };
+    s.order.push(id);
+    var wasRoot = !tip();
+    s.branches[s.head] = id;
+    s.wd = treeLines.slice();
+    s.idx = treeLines.slice();
+    s.events.push(s.head === 'main' ? 'commit:main' : 'commit:other');
+    var out = ['[' + s.head + (wasRoot ? ' (root-commit)' : '') + ' ' + short(id) + '] ' + msg];
+    if (printStat) {
+      out = out.concat(statLines(old, treeLines));
+      if (wasRoot) out.push(' create mode 100644 myinfo.py');
+    }
+    return out.join('\n');
+  }
+
+  function validName(n) { return /^[A-Za-z0-9._\/-]+$/.test(n) && n[0] !== '-'; }
+
+  function cmdBranch(args) {
+    if (!args.length) {
+      return Object.keys(s.branches).sort().map(function (b) { return (b === s.head ? '* ' : '  ') + b; }).join('\n');
+    }
+    if (args[0] === '-d' || args[0] === '-D') {
+      var force = args[0] === '-D', n = args[1];
+      if (!n) return 'fatal: branch name required';
+      if (!(n in s.branches)) return "error: branch '" + n + "' not found.";
+      if (n === s.head) return "error: cannot delete branch '" + n + "' used by the current working tree";
+      var t = tip(n);
+      if (!force && !isAncestor(t, tip())) return "error: the branch '" + n + "' is not fully merged.\nhint: If you are sure you want to delete it, run 'git branch -D " + n + "'";
+      delete s.branches[n];
+      return 'Deleted branch ' + n + ' (was ' + (t ? short(t) : '0000000') + ').';
+    }
+    var name = args[0];
+    if (!validName(name)) return "fatal: '" + name + "' is not a valid branch name";
+    if (name in s.branches) return "fatal: a branch named '" + name + "' already exists";
+    if (!tip()) return "fatal: not a valid object name: '" + s.head + "'";
+    s.branches[name] = tip();
+    s.events.push('branch');
+    return '';
+  }
+
+  function cmdSwitch(args, isCheckout) {
+    var create = false, name = null;
+    for (var i = 0; i < args.length; i++) {
+      if (args[i] === '-c' || args[i] === '-b' || args[i] === '--create') create = true;
+      else if (args[i][0] !== '-') name = args[i];
+    }
+    if (!name) return 'fatal: missing branch name';
+    if (create) {
+      if (!validName(name)) return "fatal: '" + name + "' is not a valid branch name";
+      if (name in s.branches) return "fatal: a branch named '" + name + "' already exists";
+      if (!tip()) return "fatal: invalid reference: " + s.head;
+      s.branches[name] = tip();
+      s.head = name;
+      s.events.push('branch');
+      return "Switched to a new branch '" + name + "'";
+    }
+    if (!(name in s.branches)) return isCheckout ? "error: pathspec '" + name + "' did not match any file(s) known to git" : 'fatal: invalid reference: ' + name;
+    if (name === s.head) return "Already on '" + name + "'";
+    var target = tree(tip(name)), cur = headTree();
+    if (isDirty() && !eq(target, cur)) {
+      return 'error: Your local changes to the following files would be overwritten by checkout:\n\tmyinfo.py\nPlease commit your changes or stash them before you switch branches.\nAborting';
+    }
+    var dirtySame = isDirty();
+    var oldWd = s.wd, oldIdx = s.idx;
+    s.head = name;
+    if (dirtySame) { s.wd = oldWd; s.idx = oldIdx; }
+    else { s.wd = target.slice(); s.idx = target.slice(); }
+    return "Switched to branch '" + name + "'";
+  }
+
+  function cmdMerge(args) {
+    var name = args.filter(function (a) { return a[0] !== '-'; })[0];
+    if (!name) return 'fatal: No remote for the current branch.';
+    if (!(name in s.branches)) return 'merge: ' + name + ' - not something we can merge';
+    var mine = tip(), theirs = tip(name);
+    if (!mine) return 'fatal: Your current branch has no commits yet.';
+    if (name === s.head || theirs === mine || isAncestor(theirs, mine)) return 'Already up to date.';
+    if (isDirty()) return 'error: Your local changes to the following files would be overwritten by merge:\n\tmyinfo.py\nPlease commit your changes or stash them before you merge.\nAborting';
+    var oldT = headTree(), newT;
+    if (isAncestor(mine, theirs)) {
+      newT = tree(theirs).slice();
+      s.branches[s.head] = theirs;
+      s.wd = newT.slice();
+      s.idx = newT.slice();
+      s.events.push('merge-ff');
+      return ['Updating ' + short(mine) + '..' + short(theirs), 'Fast-forward'].concat(statLines(oldT, newT)).join('\n');
+    }
+    newT = oldT.slice();
+    tree(theirs).forEach(function (l) { if (!has(newT, l)) newT.push(l); });
+    var save = s.events.length;
+    var res = makeCommit("Merge branch '" + name + "'", [mine, theirs], newT, false);
+    s.events.length = save;
+    s.events.push('merge-commit');
+    return ["Merge made by the 'ort' strategy."].concat(statLines(oldT, newT)).join('\n');
+  }
+
+  function ancestors(starts) {
+    var seen = {}, st = starts.slice();
+    while (st.length) {
+      var c = st.pop();
+      if (!c || seen[c]) continue;
+      seen[c] = 1;
+      s.commits[c].parents.forEach(function (p) { st.push(p); });
+    }
+    return Object.keys(seen).sort(function (a, b) { return s.commits[b].seq - s.commits[a].seq; });
+  }
+
+  function cmdLog(args) {
+    if (!tip() && args.indexOf('--all') === -1) return "fatal: your current branch '" + s.head + "' does not have any commits yet";
+    var one = args.indexOf('--oneline') !== -1, all = args.indexOf('--all') !== -1;
+    var starts = all ? Object.keys(s.branches).map(function (b) { return s.branches[b]; }) : [tip()];
+    var ids = ancestors(starts);
+    if (!ids.length) return "fatal: your current branch '" + s.head + "' does not have any commits yet";
+    var note = args.indexOf('--graph') !== -1 ? '(Le graphique de l\'historique est dessiné à droite du terminal.)\n' : '';
+    if (one) return note + ids.map(function (id) { return short(id) + decorations(id) + ' ' + s.commits[id].msg; }).join('\n');
+    return note + ids.map(function (id) {
+      var c = s.commits[id];
+      var lines = ['commit ' + id + decorations(id)];
+      if (c.parents.length > 1) lines.push('Merge: ' + c.parents.map(short).join(' '));
+      lines.push('Author: ' + ident.name + ' <' + ident.email + '>', 'Date:   ' + fakeDate(c.seq), '', '    ' + c.msg);
+      return lines.join('\n');
+    }).join('\n\n');
+  }
+
+  function cmdDiff() {
+    if (!s.idx) return '';
+    var oldT = s.idx, newT = s.wd;
+    var added = newT.filter(function (l) { return !has(oldT, l); });
+    var removed = oldT.filter(function (l) { return !has(newT, l); });
+    if (!added.length && !removed.length) return '';
+    var out = ['diff --git a/myinfo.py b/myinfo.py', '--- a/myinfo.py', '+++ b/myinfo.py'];
+    removed.forEach(function (l) { out.push('-' + l); });
+    added.forEach(function (l) { out.push('+' + l); });
+    return out.join('\n');
+  }
+
+  function cmdRestore(args) {
+    var staged = args.indexOf('--staged') !== -1;
+    if (staged) {
+      if (!s.idx) return "fatal: pathspec 'myinfo.py' did not match any files";
+      if (!tip()) return 'fatal: could not resolve HEAD';
+      s.idx = headTree().slice();
+      return '';
+    }
+    if (!s.idx) return "error: pathspec 'myinfo.py' did not match any file(s) known to git";
+    s.wd = s.idx.slice();
+    return '';
+  }
+
+  function cmdRm(args) {
+    if (args.indexOf('--cached') === -1) return 'Dans ce bac à sable, utilisez : git rm --cached myinfo.py';
+    if (!s.idx) return "fatal: pathspec 'myinfo.py' did not match any files";
+    if (tip()) return 'Après un premier commit, utilisez plutôt : git restore --staged myinfo.py';
+    s.idx = null;
+    return "rm 'myinfo.py'";
+  }
+
+  var HELP = [
+    'Commandes disponibles dans ce bac à sable :',
+    '  git status                    état des trois zones',
+    '  git add myinfo.py  |  git add .   indexer le fichier',
+    '  git commit -m "message"       valider (option -a : indexer les fichiers modifiés)',
+    '  git log [--oneline] [--all]   historique',
+    '  git diff                      différences non indexées',
+    '  git branch [nom]              lister / créer une branche',
+    '  git branch -d nom             supprimer une branche fusionnée',
+    '  git switch nom | git switch -c nom   changer / créer + changer',
+    '  git checkout nom | git checkout -b nom   (ancienne syntaxe, équivalente)',
+    '  git merge nom                 fusionner nom dans la branche courante',
+    '  git restore --staged myinfo.py   désindexer',
+    '  ls, cat myinfo.py, clear, help',
+    'Le bouton « Modifier myinfo.py » simule une modification dans votre éditeur.'
+  ].join('\n');
+
+  function tokenize(line) {
+    var re = /"([^"]*)"|'([^']*)'|(\S+)/g, m, out = [];
+    while ((m = re.exec(line))) out.push(m[1] !== undefined ? m[1] : (m[2] !== undefined ? m[2] : m[3]));
+    return out;
+  }
+
+  function run(line) {
+    var t = tokenize(line.trim());
+    if (!t.length) return { out: '' };
+    var c = t[0];
+    if (c === 'clear') return { out: '', clear: true };
+    if (c === 'help') return { out: HELP };
+    if (c === 'ls') return { out: 'myinfo.py' };
+    if (c === 'cat') return { out: t[1] === 'myinfo.py' ? s.wd.join('\n') : 'cat: ' + (t[1] || '') + ': No such file or directory' };
+    if (c === 'python' || c === 'python3') return { out: 'Dans le vrai TP, python exécute myinfo.py. Ici, observez surtout Git.' };
+    if (c !== 'git') return { out: c + ': commande non gérée dans ce bac à sable (tapez help)' };
+    var sub = t[1], args = t.slice(2);
+    var out;
+    switch (sub) {
+      case 'status': out = cmdStatus(); break;
+      case 'add': out = cmdAdd(args); break;
+      case 'commit': out = cmdCommit(args); break;
+      case 'log': out = cmdLog(args); break;
+      case 'diff': out = cmdDiff(); break;
+      case 'branch': out = cmdBranch(args); break;
+      case 'switch': out = cmdSwitch(args, false); break;
+      case 'checkout': out = cmdSwitch(args, true); break;
+      case 'merge': out = cmdMerge(args); break;
+      case 'restore': out = cmdRestore(args); break;
+      case 'rm': out = cmdRm(args); break;
+      case 'init': out = 'Reinitialized existing Git repository in TP1-Git/.git/'; break;
+      case undefined: out = 'usage: git <command> [<args>]  (tapez help)'; break;
+      default: out = "git: '" + sub + "' n'est pas géré dans ce bac à sable (tapez help)";
+    }
+    return { out: out };
+  }
+
+  function edit() {
+    var line = s.edits < POOL.length ? POOL[s.edits] : 'print("Ligne ' + (s.edits + 1) + '")';
+    s.edits++;
+    s.wd.push(line);
+    return 'myinfo.py modifié dans l\'éditeur : ligne ajoutée\n  + ' + line;
+  }
+
+  function layout() {
+    var lanes = { main: 0 }, next = 1, res = [];
+    s.order.forEach(function (id) {
+      var c = s.commits[id];
+      if (!(c.branch in lanes)) lanes[c.branch] = next++;
+      res.push({ id: id, short: short(id), msg: c.msg, parents: c.parents, lane: lanes[c.branch], seq: c.seq });
+    });
+    return { commits: res, lanes: next, branches: JSON.parse(JSON.stringify(s.branches)), head: s.head };
+  }
+
+  function snapshot() {
+    return { wd: s.wd.slice(), idx: s.idx ? s.idx.slice() : null, head: headTree() ? headTree().slice() : null, branch: s.head, events: s.events.slice(), commitCount: s.order.length, branchNames: Object.keys(s.branches) };
+  }
+
+  reset();
+  return {
+    run: run, edit: edit, reset: reset, layout: layout, snapshot: snapshot,
+    setIdent: function (n, e) { ident = { name: n || 'Votre Nom', email: e || 'votre.email@example.com' }; }
+  };
+}
+// ENGINE END
+// DATA START
+var PRE = {
+  id: 'pre', tag: 'Préparation', title: 'Avant de commencer',
+  goal: 'Vérifiez que votre poste est prêt. Cela prend quelques minutes et évite la plupart des blocages.',
+  learn: `Pour ce TP, vous avez besoin de quatre choses : **Git**, un **compte GitHub**, **Python** et un **éditeur de texte**.
+
+Les commandes se tapent dans un **terminal** : Git Bash sous Windows, l'application Terminal sous macOS et Linux.`,
+  steps: [
+    { t: `Ouvrez un terminal et vérifiez que **Git** est installé.`,
+      cmd: `git --version`,
+      out: `git version 2.47.1.windows.1`,
+      note: { k: 'info', t: `Votre numéro de version sera peut-être différent, c'est normal. Si le terminal répond « command not found » ou « n'est pas reconnu », installez Git depuis {{git-scm.com/downloads|https://git-scm.com/downloads}}. Sous Windows, gardez les options par défaut : l'installateur ajoute **Git Bash**, le terminal utilisé dans ce TP.` } },
+    { t: `Créez un compte sur {{github.com|https://github.com/}} si vous n'en avez pas. Notez votre **pseudo** et l'**adresse e-mail** du compte.`,
+      note: { k: 'tip', t: `Renseignez ces deux informations dans la carte « Personnalisez vos commandes » en haut de la page : toutes les commandes seront prêtes à copier.` } },
+    { t: `Vérifiez que **Python** est installé.`,
+      cmd: `python --version
+# sous macOS et Linux, la commande est souvent :
+python3 --version`,
+      out: `Python 3.12.4`,
+      note: { k: 'info', t: `Python 3.6 ou plus récent convient. Sous Windows, si la commande est introuvable, installez Python depuis {{python.org|https://www.python.org/downloads/}} en cochant « Add python.exe to PATH ». Dans la suite du TP, remplacez **python** par **python3** si votre système l'exige.` } },
+    { t: `Installez un éditeur de code. {{Visual Studio Code|https://code.visualstudio.com/}} est recommandé, mais Notepad++ ou tout autre éditeur convient.`,
+      note: { k: 'warn', t: `N'utilisez pas le Bloc-notes sous Windows pour les fichiers de code : il peut ajouter une extension .txt cachée à vos fichiers.` } }
+  ]
+};
+
+var PARTS = [
+  /* ------------------------------------------------------------------ 1 */
+  { id: 'p1', n: 1, tag: 'Partie 1', short: 'Initialiser', title: 'Initialiser un dépôt Git',
+    goal: 'Créer un dossier de travail et le transformer en dépôt Git, puis déclarer qui vous êtes.',
+    learn: `Un **dépôt** (repository, ou « repo ») est un dossier que Git surveille. Son historique est rangé dans un sous-dossier caché nommé **.git**.
+
+Si vous supprimez **.git**, le dossier redevient un dossier ordinaire : tout l'historique disparaît avec lui.`,
+    steps: [
+      { t: `Sur votre disque, créez un dossier **DevOps-DataLabs**, et à l'intérieur un dossier **TP1-Git**.`,
+        note: { k: 'tip', t: `Vous pouvez le faire avec l'explorateur de fichiers, ou depuis un terminal : [[mkdir -p DevOps-DataLabs/TP1-Git]].` } },
+      { t: `Ouvrez un terminal **dans** le dossier TP1-Git. Sous Windows : clic droit dans le dossier, puis « Git Bash Here » (sous Windows 11, d'abord « Afficher plus d'options »).`,
+        cmd: `# si vous avez ouvert le terminal ailleurs, rejoignez le dossier :
+cd DevOps-DataLabs/TP1-Git
+pwd`,
+        why: `Un terminal travaille toujours dans un dossier précis, appelé **dossier courant**. La commande [[pwd]] (print working directory) l'affiche.
+
+Toutes les commandes Git de ce TP s'exécutent dans le dossier courant : si vous vous trompez de dossier, Git ne trouvera pas votre dépôt.` },
+      { t: `Vérifiez que le dossier est vide.`,
+        cmd: `ls`,
+        note: { k: 'info', t: `Aucun affichage : le dossier est vide.` } },
+      { t: `Transformez ce dossier en dépôt Git avec **git init**.`,
+        cmd: `git init -b main`,
+        out: `Initialized empty Git repository in .../TP1-Git/.git/`,
+        note: { k: 'up', t: `L'option [[-b main]] fixe le nom de la branche principale. Selon la version de Git installée, la branche créée par défaut peut encore s'appeler **master**, alors que GitHub et tout ce TP utilisent **main**. Si vous avez déjà lancé [[git init]] sans l'option, corrigez avec [[git branch -M main]] après votre premier commit.` },
+        why: `Le message confirme la création d'un dépôt **local** : tout reste sur votre machine pour l'instant. Aucun serveur n'est nécessaire pour utiliser Git.` },
+      { t: `Découvrez le dossier caché **.git**.`,
+        cmd: `ls -a
+cd .git
+ls
+cd ..`,
+        note: { k: 'warn', t: `Ne modifiez jamais le contenu de [[.git]] à la main. Vous y trouverez notamment [[HEAD]], [[config]], [[objects]] et [[refs]] : c'est la base de données de Git.` } },
+      { t: `Affichez l'état du dépôt avec **git status**.`,
+        cmd: `git status`,
+        out: `On branch main
+
+No commits yet
+
+nothing to commit (create/copy files and use "git add" to track)`,
+        note: { k: 'info', t: `Selon la langue de votre Git, le texte peut être en français (« Sur la branche main », « Aucun commit »). Il dit : vous êtes sur la branche **main**, et aucun commit n'existe encore.` },
+        why: `[[git status]] est la commande que vous taperez le plus souvent. Elle répond à la question « où en suis-je ? » : quels fichiers sont modifiés, lesquels sont prêts à être validés, lesquels ne sont pas suivis.` },
+      { t: `Dites à Git qui vous êtes. Cette identité sera inscrite dans chacun de vos commits.`,
+        cmd: `git config --global user.name "%NOM%"
+git config --global user.email "%EMAIL%"`,
+        note: { k: 'up', t: `Mettez le nom entre guillemets s'il contient des espaces. Utilisez l'adresse e-mail de votre compte GitHub : c'est elle qui permet à GitHub de relier vos commits à votre profil.` },
+        why: `Ces deux réglages **ne connectent pas** votre dépôt à GitHub. Ils servent seulement à signer vos commits (« Auteur : nom et e-mail »). La liaison avec GitHub se fait plus tard, dans la Partie 7.
+
+L'option [[--global]] applique le réglage à tous vos dépôts, sur cet ordinateur et pour votre session.` },
+      { t: `Relisez votre configuration.`,
+        cmd: `git config --list`,
+        out: `user.name=%NOM%
+user.email=%EMAIL%`,
+        note: { k: 'info', t: `La liste peut contenir d'autres lignes. Cherchez **user.name** et **user.email**. Si le terminal reste bloqué sur un affichage en pages, tapez [[q]] pour en sortir. En cas d'erreur de saisie, relancez simplement la commande [[git config]] avec la bonne valeur.` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 2 */
+  { id: 'p2', n: 2, tag: 'Partie 2', short: 'Indexer, valider', title: 'Indexer et valider un fichier',
+    goal: 'Créer un fichier Python, le préparer avec git add, puis l\'enregistrer dans l\'historique avec git commit.',
+    learn: `Dans Git, un fichier passe par **trois zones** : le **répertoire de travail** (vos fichiers), l'**index** (une zone de transit où l'on dépose ce qui partira ensemble) et le **dépôt** (l'historique).
+
+Pensez à un colis : vous posez les objets sur la table (répertoire de travail), vous les mettez dans le carton (**git add**), puis vous scellez et étiquetez le carton (**git commit** avec son message).
+
+Un **commit** est un instantané du projet, identifié par un code unique appelé **hash**. Les 7 premiers caractères suffisent pour le désigner.`,
+    steps: [
+      { t: `Dans TP1-Git, créez un fichier **myinfo.py** qui affiche vos informations personnelles. Ouvrez votre éditeur, collez ce code, puis enregistrez.`,
+        file: { name: 'myinfo.py', body: `# Créez des variables pour stocker vos informations
+nom = "%NOM%"
+email = "%EMAIL%"
+
+# Utilisez la fonction print() pour afficher les informations
+print("--- Mes informations personnelles ---")
+print(f"Nom : {nom}")
+print(f"Email : {email}")
+print("-----------------------------------")` },
+        note: { k: 'tip', t: `Si VS Code est installé, [[code myinfo.py]] ouvre le fichier directement depuis le terminal. Enregistrez toujours le fichier en **UTF-8** (c'est le réglage par défaut de VS Code).` } },
+      { t: `Affichez le contenu du fichier depuis le terminal.`,
+        cmd: `cat myinfo.py` },
+      { t: `Exécutez le programme.`,
+        cmd: `python myinfo.py
+# macOS / Linux, si python n'est pas reconnu :
+python3 myinfo.py`,
+        out: `--- Mes informations personnelles ---
+Nom : %NOM%
+Email : %EMAIL%
+-----------------------------------` },
+      { t: `Examinez l'état du dépôt.`,
+        cmd: `git status`,
+        out: `On branch main
+
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	myinfo.py
+
+nothing added to commit but untracked files present (use "git add" to track)`,
+        note: { k: 'info', t: `Git a repéré le nouveau fichier. Il est affiché en rouge parce qu'il est **non suivi** (untracked) : Git le voit, mais n'en garde encore aucune trace.` } },
+      { t: `Placez le fichier dans l'index avec **git add**.`,
+        cmd: `git add myinfo.py`,
+        why: `[[git add]] ne copie rien vers GitHub et ne modifie pas l'historique. Il prend une **photo du fichier à cet instant** et la dépose dans l'index.
+
+Si vous modifiez le fichier après [[git add]], la photo n'est plus à jour : refaites [[git add]] avant de valider.` },
+      { t: `Vérifiez à nouveau l'état.`,
+        cmd: `git status`,
+        out: `On branch main
+
+No commits yet
+
+Changes to be committed:
+  (use "git rm --cached <file>..." to unstage)
+	new file:   myinfo.py`,
+        note: { k: 'info', t: `Le fichier est maintenant en vert : il est prêt à être validé. Pour le retirer de l'index avant le premier commit, utilisez [[git rm --cached myinfo.py]] (le fichier reste sur le disque). **Après** un premier commit, la commande moderne est [[git restore --staged myinfo.py]].` } },
+      { t: `Validez avec **git commit**. L'option **-m** donne le message qui explique le changement.`,
+        cmd: `git commit -m "Ajout de myinfo.py"`,
+        out: `[main (root-commit) 3f2a9c1] Ajout de myinfo.py
+ 1 file changed, 9 insertions(+)
+ create mode 100644 myinfo.py`,
+        note: { k: 'warn', t: `Votre code entre crochets (ici **3f2a9c1**) sera différent : c'est l'identifiant de votre commit. Si vous oubliez [[-m]], Git ouvre un éditeur nommé **vim** : appuyez sur Échap, tapez [[:q!]] puis Entrée pour en sortir sans rien enregistrer, ou écrivez un message puis tapez [[:wq]].` },
+        why: `Un bon message de commit est court et décrit le **changement** : « Ajout de myinfo.py », « Corrige le calcul de la moyenne ». Dans six mois, c'est ce qui vous permettra de retrouver quelque chose.
+
+« Premier commit » ou « modif » ne disent rien à vos collègues.` },
+      { t: `Affichez l'historique avec **git log**.`,
+        cmd: `git log
+# version compacte, une ligne par commit :
+git log --oneline`,
+        out: `commit 3f2a9c1e5b7d8a0c4f6e2b1a9d3c5e7f8a0b2c4d (HEAD -> main)
+Author: %NOM% <%EMAIL%>
+Date:   Fri Oct 9 21:30:00 2026 +0100
+
+    Ajout de myinfo.py`,
+        note: { k: 'info', t: `Le premier mot de la première ligne est le hash complet du commit, suivi de la branche où vous êtes. Si l'affichage reste bloqué, tapez [[q]] pour quitter.` },
+        q: { q: `Un commit contient-il seulement les lignes modifiées, ou une image complète du projet ?`, a: `Git enregistre un **instantané** de l'ensemble des fichiers indexés. Pour rester léger, il ne stocke pas deux fois ce qui n'a pas changé, mais pour vous, chaque commit représente bien l'état complet du projet à ce moment-là.` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 3 */
+  { id: 'p3', n: 3, tag: 'Partie 3', short: 'Modifier, comparer', title: 'Modifier un fichier et suivre les changements',
+    goal: 'Répéter le cycle modifier, indexer, valider, puis comparer deux commits.',
+    learn: `Le quotidien avec Git tient en une boucle : **modifier**, **git status**, **git add**, **git commit**. Vous allez la répéter des centaines de fois.
+
+La commande **git diff** montre ce qui a changé. Une ligne qui commence par **+** a été ajoutée, une ligne qui commence par **-** a été supprimée.`,
+    steps: [
+      { t: `Ajoutez une ligne à la fin de **myinfo.py** pour indiquer que vous êtes étudiant en MP2-SD, puis enregistrez.`,
+        file: { name: 'myinfo.py (nouvelle ligne à ajouter)', body: `print("Je suis etudiant en MP2-SD")` },
+        note: { k: 'tip', t: `Le texte est écrit sans accent exprès : certains terminaux Windows affichent mal les accents avec Python.` } },
+      { t: `Vérifiez la modification.`,
+        cmd: `git status`,
+        out: `On branch main
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   myinfo.py
+
+no changes added to commit (use "git add" and/or "git commit -a")`,
+        note: { k: 'info', t: `Le fichier est suivi, mais sa nouvelle version n'est pas encore dans l'index : « Changes not staged for commit ».` } },
+      { t: `Regardez ce qui a changé, avant même d'indexer.`,
+        cmd: `git diff`,
+        out: `diff --git a/myinfo.py b/myinfo.py
+--- a/myinfo.py
++++ b/myinfo.py
+@@ -7,3 +7,4 @@ print("--- Mes informations personnelles ---")
+ print(f"Nom : {nom}")
+ print(f"Email : {email}")
+ print("-----------------------------------")
++print("Je suis etudiant en MP2-SD")`,
+        note: { k: 'info', t: `Les lignes sans signe sont du contexte, la ligne en **+** est celle que vous venez d'ajouter.` } },
+      { t: `Indexez puis validez la modification.`,
+        cmd: `git add myinfo.py
+git commit -m "Affiche le statut etudiant MP2-SD"`,
+        out: `[main b81e4d7] Affiche le statut etudiant MP2-SD
+ 1 file changed, 1 insertion(+)`,
+        note: { k: 'info', t: `Remarquez le nouvel identifiant : chaque commit a le sien.` } },
+      { t: `Affichez à nouveau l'historique.`,
+        cmd: `git log --oneline`,
+        out: `b81e4d7 (HEAD -> main) Affiche le statut etudiant MP2-SD
+3f2a9c1 Ajout de myinfo.py`,
+        note: { k: 'info', t: `Les deux commits apparaissent, le plus récent en premier. **HEAD** indique l'endroit où vous vous trouvez.` } },
+      { t: `Comparez les deux commits. Remplacez les identifiants par les vôtres, le plus ancien d'abord.`,
+        cmd: `git diff 3f2a9c1 b81e4d7
+# raccourci équivalent, sans recopier les identifiants :
+git diff HEAD~1 HEAD`,
+        why: `**HEAD** désigne le commit actuel, et **HEAD~1** son parent (le commit juste avant). Ces raccourcis évitent de recopier les codes à chaque fois.`,
+        q: { q: `Que voit-on si on inverse l'ordre des deux identifiants ?`, a: `Le sens de la comparaison s'inverse : la ligne ajoutée apparaît maintenant avec un **-**. Git raconte toujours « ce qu'il faut faire pour passer du premier au second ».` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 4 */
+  { id: 'p4', n: 4, tag: 'Partie 4', short: 'Branches', title: 'Travailler avec des branches',
+    goal: 'Créer une branche, y valider un changement, et constater que main n\'est pas affectée.',
+    learn: `Une **branche** est une ligne de travail parallèle. Elle permet d'essayer une idée, de développer une fonctionnalité ou de corriger un bug **sans toucher à la branche principale**.
+
+Techniquement, une branche n'est qu'une **étiquette** qui pointe vers un commit. Créer une branche est donc instantané et ne copie aucun fichier.
+
+On évite de travailler directement sur **main** : elle doit rester stable, car c'est elle que l'on livre.`,
+    steps: [
+      { t: `Créez une branche nommée **test**.`,
+        cmd: `git branch test`,
+        note: { k: 'info', t: `Cette commande crée la branche mais ne vous y déplace pas.` } },
+      { t: `Listez les branches du dépôt.`,
+        cmd: `git branch`,
+        out: `* main
+  test`,
+        note: { k: 'info', t: `L'astérisque marque la branche sur laquelle vous êtes.` } },
+      { t: `Basculez vers la branche **test**.`,
+        cmd: `git switch test`,
+        out: `Switched to branch 'test'`,
+        note: { k: 'up', t: `Beaucoup de supports utilisent encore [[git checkout test]]. Elle fonctionne toujours, mais [[git switch]] est la commande dédiée au changement de branche, plus claire pour les débutants. Pour **créer et basculer** en une fois : [[git switch -c test]].` } },
+      { t: `Vérifiez que vous êtes bien sur **test**.`,
+        cmd: `git branch` },
+      { t: `Ajoutez une ligne à **myinfo.py** pour indiquer qu'il s'agit de votre premier TP DevOps, puis enregistrez.`,
+        file: { name: 'myinfo.py (nouvelle ligne à ajouter)', body: `print("Ceci est mon 1er TP DevOps")` } },
+      { t: `Vérifiez l'état, indexez le fichier, puis vérifiez de nouveau.`,
+        cmd: `git status
+git add myinfo.py
+git status`,
+        note: { k: 'info', t: `La modification est détectée sur la branche **test**, puis le fichier passe en vert une fois indexé.` } },
+      { t: `Validez ce changement sur la branche **test**.`,
+        cmd: `git commit -m "Ajoute la ligne 1er TP DevOps"`,
+        out: `[test c4d9a02] Ajoute la ligne 1er TP DevOps
+ 1 file changed, 1 insertion(+)` },
+      { t: `Affichez l'historique.`,
+        cmd: `git log --oneline`,
+        out: `c4d9a02 (HEAD -> test) Ajoute la ligne 1er TP DevOps
+b81e4d7 (main) Affiche le statut etudiant MP2-SD
+3f2a9c1 Ajout de myinfo.py`,
+        note: { k: 'info', t: `Deux étiquettes : **test** pointe sur le nouveau commit, **main** est restée un cran en arrière.` } },
+      { t: `Revenez sur la branche **main** et réaffichez l'historique.`,
+        cmd: `git switch main
+git log --oneline`,
+        out: `b81e4d7 (HEAD -> main) Affiche le statut etudiant MP2-SD
+3f2a9c1 Ajout de myinfo.py`,
+        q: { q: `Que remarquez-vous dans l'historique de main ?`, a: `Le commit « Ajoute la ligne 1er TP DevOps » a disparu de la liste : il appartient à la branche **test**. Pour voir toutes les branches à la fois, utilisez [[git log --oneline --graph --all]].` } },
+      { t: `Affichez le contenu de **myinfo.py** dans le terminal ou dans l'éditeur.`,
+        cmd: `cat myinfo.py`,
+        q: { q: `La ligne « 1er TP DevOps » est-elle là ? Pourquoi ?`, a: `Non. En changeant de branche, Git a **remis vos fichiers dans l'état de main**. Votre dossier de travail reflète toujours la branche sur laquelle vous êtes. Retournez sur **test** et la ligne réapparaît.` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 5 */
+  { id: 'p5', n: 5, tag: 'Partie 5', short: 'Fusion', title: 'Fusionner des branches',
+    goal: 'Intégrer le travail de la branche test dans main, puis nettoyer.',
+    learn: `Une fois une fonctionnalité terminée et vérifiée, on l'intègre à **main** avec **git merge**. On se place d'abord sur la branche qui doit **recevoir** les modifications.
+
+Ici, **main** n'a pas bougé depuis la création de **test** : Git se contente d'avancer l'étiquette de main jusqu'au dernier commit de test. C'est un **fast-forward** (avance rapide). Si les deux branches avaient évolué, Git créerait un commit de fusion.`,
+    steps: [
+      { t: `Vérifiez que vous êtes sur **main**.`,
+        cmd: `git branch` },
+      { t: `Fusionnez la branche **test** dans **main**.`,
+        cmd: `git merge test`,
+        out: `Updating b81e4d7..c4d9a02
+Fast-forward
+ myinfo.py | 1 +
+ 1 file changed, 1 insertion(+)`,
+        note: { k: 'info', t: `Le nom donné à la commande est celui de la branche **source**, dont on récupère les modifications. La branche **courante** est celle qui les reçoit.` } },
+      { t: `Vérifiez le contenu de **myinfo.py** sur **main**.`,
+        cmd: `cat myinfo.py
+git log --oneline --graph --all`,
+        out: `* c4d9a02 (HEAD -> main, test) Ajoute la ligne 1er TP DevOps
+* b81e4d7 Affiche le statut etudiant MP2-SD
+* 3f2a9c1 Ajout de myinfo.py`,
+        note: { k: 'info', t: `La ligne ajoutée sur **test** est maintenant présente sur **main**, et les deux étiquettes pointent vers le même commit.` } },
+      { t: `Vérifiez que la branche **test** existe toujours.`,
+        cmd: `git branch` },
+      { t: `Supprimez la branche **test**, devenue inutile.`,
+        cmd: `git branch -d test`,
+        out: `Deleted branch test (was c4d9a02).`,
+        why: `Supprimer une branche ne supprime **pas** ses commits : on retire seulement l'étiquette. Ici, les commits sont déjà dans main.
+
+L'option [[-d]] est prudente : Git refuse de supprimer une branche non fusionnée. L'option [[-D]] force la suppression, à réserver aux cas où vous êtes sûr de vous.` },
+      { t: `Vérifiez que **test** n'apparaît plus.`,
+        cmd: `git branch`,
+        out: `* main` }
+    ] },
+
+  /* ------------------------------------------------------------------ 6 */
+  { id: 'p6', n: 6, tag: 'Partie 6', short: 'Conflits', title: 'Résoudre un conflit de fusion',
+    goal: 'Provoquer volontairement un conflit, le comprendre, puis le résoudre.',
+    learn: `Un **conflit** survient quand deux branches ont modifié **la même ligne** : Git ne peut pas deviner laquelle garder, il vous laisse trancher.
+
+Ce n'est pas une erreur. C'est une situation normale du travail en équipe, et vous allez voir qu'elle se règle en quelques gestes.
+
+Git marque la zone en cause dans le fichier avec trois repères : **<<<<<<<** (début, version de la branche courante), **=======** (séparation) et **>>>>>>>** (fin, version de la branche qu'on fusionne).`,
+    steps: [
+      { t: `Créez une branche **work** et basculez dessus en une seule commande.`,
+        cmd: `git switch -c work`,
+        out: `Switched to a new branch 'work'`,
+        note: { k: 'info', t: `[[git switch -c]] remplace la paire [[git branch work]] puis [[git switch work]] de la Partie 4.` } },
+      { t: `Dans **myinfo.py**, remplacez la spécialité **SD** par **GL** dans la ligne « Je suis etudiant en MP2-SD », puis enregistrez.`,
+        file: { name: 'myinfo.py (branche work)', body: `print("Je suis etudiant en MP2-GL")` } },
+      { t: `Indexez et validez en une seule commande.`,
+        cmd: `git commit -a -m "Specialite GL"`,
+        note: { k: 'info', t: `L'option [[-a]] indexe automatiquement les fichiers **déjà suivis** qui ont été modifiés ou supprimés. Elle n'ajoute pas les nouveaux fichiers : ceux-là nécessitent toujours [[git add]].` } },
+      { t: `Revenez sur la branche **main**.`,
+        cmd: `git switch main` },
+      { t: `Dans **myinfo.py**, remplacez cette fois **SD** par **IoT** sur la même ligne, puis enregistrez.`,
+        file: { name: 'myinfo.py (branche main)', body: `print("Je suis etudiant en MP2-IoT")` } },
+      { t: `Indexez et validez sur **main**.`,
+        cmd: `git commit -a -m "Specialite IoT"` },
+      { t: `Essayez de fusionner la branche **work** dans **main**.`,
+        cmd: `git merge work`,
+        out: `Auto-merging myinfo.py
+CONFLICT (content): Merge conflict in myinfo.py
+Automatic merge failed; fix conflicts and then commit the result.`,
+        note: { k: 'info', t: `Le conflit est signalé : **main** et **work** ont chacune une version différente de la même ligne. La fusion est suspendue, et vous êtes au milieu d'une fusion.` } },
+      { t: `Observez l'état du dépôt et l'historique des deux branches.`,
+        cmd: `git status
+git log --oneline --graph --all`,
+        out: `On branch main
+You have unmerged paths.
+  (fix conflicts and run "git commit")
+  (use "git merge --abort" to abort the merge)
+
+Unmerged paths:
+  (use "git add <file>..." to mark resolution)
+	both modified:   myinfo.py
+
+* 2b9e6a1 (HEAD -> main) Specialite IoT
+| * 7c0d4f2 (work) Specialite GL
+|/
+* c4d9a02 Ajoute la ligne 1er TP DevOps
+* b81e4d7 Affiche le statut etudiant MP2-SD
+* 3f2a9c1 Ajout de myinfo.py`,
+        note: { k: 'info', t: `**HEAD** désigne ici la branche **main**, celle qui reçoit la fusion. « both modified » signifie que les deux côtés ont modifié le fichier.` } },
+      { t: `Ouvrez **myinfo.py** dans votre éditeur. Git y a inscrit des repères pour vous aider à repérer le conflit.`,
+        file: { name: 'myinfo.py (pendant le conflit)', body: `<<<<<<< HEAD
+print("Je suis etudiant en MP2-IoT")
+=======
+print("Je suis etudiant en MP2-GL")
+>>>>>>> work` },
+        widget: 'conflict',
+        note: { k: 'info', t: `Entre [[<<<<<<< HEAD]] et [[=======]] : la version de **main** (mot « IoT »). Entre [[=======]] et [[>>>>>>> work]] : la version de **work** (mot « GL »).` } },
+      { t: `Résolvez le conflit : supprimez les repères et la ligne en trop, de façon à **garder la version de la branche work** (GL).`,
+        cmd: `# vérifiez qu'il ne reste aucun repère dans le fichier (rien ne doit s'afficher) :
+grep -n -E "^(<<<<<<<|=======|>>>>>>>)" myinfo.py`,
+        note: { k: 'tip', t: `Dans VS Code, cliquez sur **Accept Incoming Change** au-dessus de la zone en conflit. « Incoming » désigne la branche qu'on fusionne, ici **work**.` },
+        why: `Git ne vérifie pas que vous avez retiré les repères : si vous validez le fichier avec des [[<<<<<<<]] dedans, ils feront partie de votre code et le programme ne fonctionnera plus.
+
+Relisez toujours le fichier et exécutez-le avant de valider la résolution.` },
+      { t: `Indexez le fichier résolu et validez la fusion.`,
+        cmd: `git add myinfo.py
+git commit -m "Resolution du conflit : specialite GL"`,
+        note: { k: 'warn', t: `Si vous vous perdez en cours de route, [[git merge --abort]] annule la fusion et ramène le dépôt à son état d'avant. Vous pourrez recommencer proprement.` } },
+      { t: `Vérifiez l'historique.`,
+        cmd: `git log --oneline --graph --all`,
+        out: `*   e5a3b18 (HEAD -> main) Resolution du conflit : specialite GL
+|\\
+| * 7c0d4f2 (work) Specialite GL
+* | 2b9e6a1 Specialite IoT
+|/
+* c4d9a02 Ajoute la ligne 1er TP DevOps
+* b81e4d7 Affiche le statut etudiant MP2-SD
+* 3f2a9c1 Ajout de myinfo.py`,
+        note: { k: 'info', t: `L'allure exacte du graphe peut varier. Le point à retenir : les deux lignes de travail se rejoignent dans un **commit de fusion** à deux parents. Tapez [[q]] pour quitter l'affichage si nécessaire.` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 7 */
+  { id: 'p7', n: 7, tag: 'Partie 7', short: 'GitHub', title: 'Relier Git à GitHub',
+    goal: 'Créer un dépôt distant sur GitHub, le lier à un dépôt local et y envoyer vos commits.',
+    learn: `Jusqu'ici, tout est resté sur votre ordinateur. Pour partager le travail, on ajoute un **dépôt distant** (remote), hébergé par un service comme GitHub.
+
+Chacun garde sa **copie complète** sur sa machine, et on se synchronise avec le dépôt distant : **git push** pour envoyer ses commits, **git pull** pour récupérer ceux des autres.
+
+Le dépôt distant porte par convention le surnom **origin**.`,
+    steps: [
+      { t: `Connectez-vous à GitHub. Cliquez sur le bouton vert « **New** » ou sur le signe **+** en haut à droite, puis « New repository ».` },
+      { t: `Remplissez le formulaire : **Repository name** = **repo-tp1**, **Description** = « Collaborer dans le cadre du TP1 », visibilité **Private**. Cliquez sur « Create repository ».`,
+        note: { k: 'warn', t: `Ne cochez **aucune** des options « Add a README file », « Add .gitignore » ou « Choose a license ». Le dépôt doit être **vide**, sinon votre premier envoi sera refusé parce que les historiques ne coïncident pas.` } },
+      { t: `Dans le terminal, créez un dossier **teamWork** **à côté** de TP1-Git (pas dedans), puis entrez-y.`,
+        cmd: `cd ..
+mkdir teamWork
+cd teamWork
+pwd`,
+        why: `**TP1-Git** est déjà un dépôt Git. Si on y glisse un deuxième dépôt, Git de TP1-Git verrait **teamWork** comme un corps étranger, et on obtiendrait des messages déroutants.
+
+Règle simple : ne jamais créer un dépôt Git à l'intérieur d'un autre dépôt Git.`,
+        note: { k: 'info', t: `Le nom du dossier n'a pas besoin de correspondre à celui du dépôt GitHub.` } },
+      { t: `Copiez le fichier **myinfo.py** de TP1-Git dans **teamWork**.`,
+        cmd: `cp ../TP1-Git/myinfo.py .
+ls`,
+        note: { k: 'info', t: `Le point final désigne le dossier courant.` } },
+      { t: `Initialisez un dépôt Git dans **teamWork**.`,
+        cmd: `git init -b main` },
+      { t: `Vérifiez que votre identité Git correspond à celle de votre compte GitHub.`,
+        cmd: `git config user.name
+git config user.email`,
+        note: { k: 'info', t: `Si les valeurs affichées ne sont pas les bonnes, refaites les commandes [[git config --global]] de la Partie 1.` } },
+      { t: `Liez le dépôt local au dépôt GitHub avec **git remote add**.`,
+        cmd: `git remote add origin https://github.com/%USER%/repo-tp1.git`,
+        note: { k: 'tip', t: `L'adresse se copie depuis la page de votre dépôt sur GitHub : bouton vert « Code », onglet **HTTPS**.` },
+        why: `[[origin]] est un simple surnom pour l'adresse du dépôt distant. Plutôt que de retaper l'URL complète à chaque envoi, on utilise le surnom.` },
+      { t: `Vérifiez que le dépôt distant est bien enregistré.`,
+        cmd: `git remote -v`,
+        out: `origin  https://github.com/%USER%/repo-tp1.git (fetch)
+origin  https://github.com/%USER%/repo-tp1.git (push)` },
+      { t: `Lancez **git log**.`,
+        cmd: `git log`,
+        out: `fatal: your current branch 'main' does not have any commits yet`,
+        note: { k: 'info', t: `Le message d'erreur est normal : ce nouveau dépôt n'a encore aucun commit.` } },
+      { t: `Indexez puis validez le fichier **myinfo.py**.`,
+        cmd: `git add myinfo.py
+git commit -m "Premier commit du dossier teamWork"` },
+      { t: `Vérifiez le commit, puis l'état du dépôt.`,
+        cmd: `git log --oneline
+git status`,
+        out: `On branch main
+nothing to commit, working tree clean`,
+        q: { q: `Que remarquez-vous dans la sortie de git status ?`, a: `Tout est validé : l'arbre de travail est « propre ». Git ne dit encore rien du dépôt GitHub, car la branche **main** locale n'est pas encore reliée à une branche distante. Ce sera chose faite après l'envoi avec [[-u]].` } },
+      { t: `Choisissez comment vous allez **vous authentifier** auprès de GitHub pour l'envoi.`,
+        widget: 'auth',
+        note: { k: 'up', t: `Depuis août 2021, GitHub n'accepte plus le mot de passe de votre compte pour les opérations Git en ligne de commande. Le plus simple est le gestionnaire d'identifiants (une fenêtre de navigateur s'ouvre). Sinon, utilisez un **jeton d'accès personnel** à la place du mot de passe.` } },
+      { t: `Envoyez votre branche **main** vers GitHub.`,
+        cmd: `git push -u origin main`,
+        out: `Enumerating objects: 3, done.
+Counting objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 345 bytes | 345.00 KiB/s, done.
+Total 3 (delta 0), reused 0 (delta 0), pack-reused 0
+To https://github.com/%USER%/repo-tp1.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.`,
+        note: { k: 'up', t: `L'option [[-u]] (upstream) mémorise le lien entre votre **main** locale et **origin/main**. Après cela, un simple [[git push]] ou [[git pull]] suffit, sans arguments. Il est possible que Git vous demande un nom d'utilisateur : c'est votre **pseudo GitHub**. Quand vous collez un jeton à la place du mot de passe, rien ne s'affiche : c'est normal.` },
+        why: `[[git push]] copie vos commits vers le dépôt distant. Seuls les commits partent : les fichiers modifiés mais non validés restent chez vous.` },
+      { t: `Actualisez la page de votre dépôt **repo-tp1** sur GitHub : **myinfo.py** doit y figurer. Ouvrez-le pour voir son contenu.`,
+        note: { k: 'tip', t: `Le push a échoué ? Ouvrez « Quand ça ne marche pas » juste en dessous.` } }
+    ],
+    trouble: [
+      { m: `error: src refspec main does not match any`, f: `Votre branche locale ne s'appelle pas **main** (souvent **master**), ou vous n'avez pas encore de commit. Faites au moins un commit, puis [[git branch -M main]] et relancez [[git push -u origin main]].` },
+      { m: `Authentication failed / Permission denied / 403`, f: `Le jeton est faux, expiré, ou n'a pas la permission **Contents : Read and write** sur le dépôt. Régénérez-en un. Sous Windows, d'anciens identifiants en cache peuvent gêner : ouvrez le Gestionnaire d'identifiants Windows et supprimez les entrées « git:https://github.com ».` },
+      { m: `fatal: remote origin already exists`, f: `Le surnom origin est déjà pris. Modifiez l'adresse avec [[git remote set-url origin <url>]].` },
+      { m: `rejected ... (fetch first) / refusing to merge unrelated histories`, f: `Le dépôt GitHub n'était pas vide (un README a été créé). Le plus simple : supprimez le dépôt sur GitHub, recréez-le sans aucune option cochée, puis relancez le push.` }
+    ] },
+
+  /* ------------------------------------------------------------------ 8 */
+  { id: 'p8', n: 8, tag: 'Partie 8', short: '.gitignore', title: 'Ignorer des fichiers avec .gitignore',
+    goal: 'Empêcher Git de suivre certains fichiers, puis vérifier le résultat sur GitHub.',
+    learn: `Certains fichiers ne doivent jamais partir dans un dépôt : mots de passe et clés (**.env**), fichiers générés (**__pycache__/**), environnements virtuels (**venv/**), gros jeux de données, brouillons.
+
+Le fichier spécial **.gitignore** liste ce que Git doit ignorer. Chaque ligne contient un nom de fichier (**Readme.md**) ou un motif ([[*.abc]] désigne tous les fichiers qui se terminent par .abc).
+
+Attention : **.gitignore** n'agit que sur les fichiers **pas encore suivis**. Un fichier déjà commité reste suivi, même si on l'ajoute au .gitignore.`,
+    steps: [
+      { t: `Toujours dans le dossier **teamWork**, créez le fichier **.gitignore** avec ces deux lignes.`,
+        cmd: `echo "*.abc" > .gitignore
+echo "Readme.md" >> .gitignore
+cat .gitignore`,
+        out: `*.abc
+Readme.md`,
+        note: { k: 'info', t: `Un seul signe [[>]] crée (ou écrase) le fichier, deux signes [[>>]] ajoutent à la fin. Vous pouvez aussi créer ce fichier avec votre éditeur.` } },
+      { t: `Créez les quatre fichiers de test.`,
+        cmd: `echo "Hi" > hi.abc
+echo "Bye" > bye.abc
+echo "# Mon TP1 Git" > Readme.md
+echo "Je ne serai pas ignoré par Git" > file.txt
+ls` },
+      { t: `Regardez ce que Git voit.`,
+        cmd: `git status`,
+        out: `On branch main
+Your branch is up to date with 'origin/main'.
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.gitignore
+	file.txt
+
+nothing added to commit but untracked files present (use "git add" to track)`,
+        q: { q: `Quels fichiers manquent dans la liste, et pourquoi ?`, a: `**hi.abc**, **bye.abc** et **Readme.md** : ils correspondent aux motifs de **.gitignore**, donc Git fait comme s'ils n'existaient pas.` } },
+      { t: `Indexez tous les fichiers, puis validez.`,
+        cmd: `git add .
+git status
+git commit -m "Ajout de .gitignore et file.txt"`,
+        note: { k: 'warn', t: `Le point de [[git add .]] signifie « tout le dossier courant ». Pratique, mais lisez toujours [[git status]] avant de valider : on peut ainsi embarquer par erreur un fichier qu'on ne voulait pas partager.` } },
+      { t: `Envoyez vos commits vers GitHub.`,
+        cmd: `git push`,
+        note: { k: 'info', t: `Plus besoin d'écrire [[origin main]] : le lien a été mémorisé grâce à [[-u]] dans la Partie 7.` } },
+      { t: `Sur GitHub, actualisez la page du dépôt. Vous devez voir **.gitignore** et **file.txt**, mais ni les fichiers **.abc**, ni **Readme.md**.` },
+      { t: `Bonus : demandez à Git pourquoi un fichier est ignoré.`,
+        cmd: `git check-ignore -v hi.abc
+git status --ignored`,
+        out: `.gitignore:1:*.abc	hi.abc`,
+        q: { q: `Et si on essaie quand même d'indexer hi.abc avec git add hi.abc ?`, a: `Git refuse et affiche un message « The following paths are ignored by one of your .gitignore files ». Il faut l'option [[-f]] (force) pour passer outre, ce qui est rarement une bonne idée.` } }
+    ] },
+
+  /* ------------------------------------------------------------------ 9 */
+  { id: 'p9', n: 9, tag: 'Partie 9', short: 'Collaboration', title: 'Collaborer sur GitHub',
+    goal: 'Inviter un binôme, cloner le dépôt, échanger des modifications et travailler sur une branche partagée.',
+    learn: `Pour travailler à plusieurs sur un dépôt qui appartient à votre compte, le propriétaire invite les autres comme **collaborateurs**.
+
+Vous travaillez en **binôme** (ou en trinôme) avec deux rôles : le **propriétaire** du dépôt repo-tp1, et le **collaborateur** qui y est invité. Les rôles peuvent ensuite s'inverser.
+
+Réflexe d'équipe à acquérir : **git pull** avant de commencer à travailler, pour partir de la dernière version.`,
+    steps: [
+      { t: `**Propriétaire.** Sur GitHub, ouvrez le dépôt, onglet « **Settings** », puis « **Collaborators** » (menu de gauche). Cliquez sur « **Add people** » et invitez votre binôme avec son pseudo GitHub.`,
+        note: { k: 'info', t: `GitHub peut vous demander de confirmer votre identité (mot de passe, clé d'accès ou code d'authentification). Un e-mail est envoyé à la personne invitée. L'invitation reste en attente jusqu'à son acceptation et expire au bout de 7 jours. Le propriétaire peut retirer un collaborateur à tout moment, et un collaborateur peut quitter un dépôt : Settings, Repositories, bouton « Leave ».` } },
+      { t: `**Collaborateur.** Acceptez l'invitation reçue par e-mail (ou sur la page de notifications de GitHub). Le dépôt apparaît ensuite dans votre liste.` },
+      { t: `**Collaborateur.** Prévoyez votre authentification. Pour pousser sur le dépôt d'un autre compte, utilisez le **gestionnaire d'identifiants** ou la **GitHub CLI** (voir la Partie 7).`,
+        note: { k: 'warn', t: `Un jeton « fine-grained » ne permet **pas** de contribuer à un dépôt dont vous n'êtes que collaborateur. Si vous utilisez un jeton, créez un jeton **classic** avec la portée [[repo]] : Settings, Developer settings, Personal access tokens, **Tokens (classic)**.` } },
+      { t: `**Collaborateur.** Créez un dossier **Collaboration** à côté des autres, puis récupérez une copie du dépôt avec **git clone**.`,
+        cmd: `cd ..
+mkdir Collaboration
+cd Collaboration
+git clone https://github.com/%OWNER%/repo-tp1.git`,
+        out: `Cloning into 'repo-tp1'...
+remote: Enumerating objects: 6, done.
+Receiving objects: 100% (6/6), done.`,
+        why: `[[git clone]] télécharge **tout** : les fichiers, mais aussi l'historique complet. Il configure automatiquement le dépôt distant sous le nom **origin** : pas besoin de [[git init]] ni de [[git remote add]].
+
+Un dossier au nom du dépôt est créé (ici **repo-tp1**).` },
+      { t: `**Collaborateur.** Entrez dans le dossier cloné et explorez son contenu.`,
+        cmd: `cd repo-tp1
+ls -a
+cat file.txt`,
+        note: { k: 'info', t: `Vous ne voyez ni **hi.abc**, ni **bye.abc**, ni **Readme.md** : ils n'ont jamais été envoyés sur GitHub (Partie 8).` } },
+      { t: `**Collaborateur.** Ajoutez une ligne à **file.txt**, indexez, validez, puis envoyez.`,
+        cmd: `echo "Cette ligne est insérée par le collaborateur" >> file.txt
+git add file.txt
+git commit -m "Ajout d'une ligne par le collaborateur"
+git push` },
+      { t: `**Collaborateur.** Sur GitHub, ouvrez **file.txt** : la ligne y figure. Cliquez sur « **History** » pour voir l'historique des mises à jour.` },
+      { t: `**Propriétaire.** Vérifiez de votre côté, sur GitHub, que le collaborateur a modifié le dépôt (onglet « Commits » ou « History »). Récupérez ensuite ce changement sur votre machine, dans **teamWork**.`,
+        cmd: `git pull
+cat file.txt`,
+        out: `Updating 9a1b2c3..d4e5f6a
+Fast-forward
+ file.txt | 1 +
+ 1 file changed, 1 insertion(+)`,
+        note: { k: 'up', t: `Si Git répond « You have divergent branches and need to specify how to reconcile them », exécutez une fois [[git config --global pull.rebase false]] puis relancez [[git pull]].` },
+        why: `[[git pull]] est en réalité deux commandes en une : [[git fetch]] (télécharger les nouveaux commits) puis [[git merge]] (les intégrer dans la branche courante).` },
+      { t: `**Collaborateur.** Créez une branche **collab-branch**, placez-vous dessus et ajoutez une ligne à **file.txt**.`,
+        cmd: `git switch -c collab-branch
+echo "Ligne pour ma branche" >> file.txt` },
+      { t: `**Collaborateur.** Indexez, validez, puis envoyez cette branche vers GitHub.`,
+        cmd: `git add file.txt
+git commit -m "Ligne pour ma branche"
+git push -u origin collab-branch`,
+        out: `remote: Create a pull request for 'collab-branch' on GitHub by visiting:
+remote:      https://github.com/%OWNER%/repo-tp1/pull/new/collab-branch
+To https://github.com/%OWNER%/repo-tp1.git
+ * [new branch]      collab-branch -> collab-branch`,
+        note: { k: 'info', t: `Cette fois, la branche **collab-branch** n'existe pas encore sur GitHub : l'option [[-u]] la crée et mémorise le lien.` } },
+      { t: `**Collaborateur.** Fusionnez **collab-branch** dans **main**, puis envoyez **main**.`,
+        cmd: `git switch main
+git pull
+git merge collab-branch
+git push`,
+        note: { k: 'tip', t: `Le [[git pull]] avant la fusion récupère d'éventuels commits de votre binôme. Dans la Partie 10, vous ferez la même fusion d'une façon plus habituelle en équipe : la Pull Request.` } }
+    ] },
+
+  /* ----------------------------------------------------------------- 10 */
+  { id: 'p10', n: 10, tag: 'Partie 10', short: 'Pull Requests', title: 'Proposer un changement avec une Pull Request',
+    goal: 'Envoyer une modification sur une branche, ouvrir une Pull Request et la faire fusionner par le propriétaire.',
+    learn: `Une **Pull Request** (PR) est une **demande de fusion** : « j'ai travaillé sur cette branche, voulez-vous l'intégrer à main ? »
+
+Elle montre les différences entre les deux branches et ouvre une discussion : l'équipe peut relire, commenter, demander des corrections, puis accepter ou refuser.
+
+En DevOps, c'est aussi sur une PR que se lancent souvent des tests automatiques avant toute fusion (intégration continue). C'est le moyen d'éviter qu'un code cassé n'arrive sur **main**.`,
+    steps: [
+      { t: `**Collaborateur.** Placez-vous sur **collab-branch** et ajoutez une ligne à **file.txt**.`,
+        cmd: `git switch collab-branch
+echo "Test des pull requests !!!" >> file.txt` },
+      { t: `Indexez, validez, puis envoyez vers la branche **collab-branch** de GitHub.`,
+        cmd: `git add file.txt
+git commit -m "Test des pull requests"
+git push`,
+        note: { k: 'info', t: `Un simple [[git push]] suffit : le lien avec **origin/collab-branch** a été créé dans la Partie 9.` } },
+      { t: `Vérifiez que **file.txt** diffère entre **main** et **collab-branch**.`,
+        cmd: `git diff main collab-branch`,
+        out: `diff --git a/file.txt b/file.txt
+--- a/file.txt
++++ b/file.txt
++Test des pull requests !!!` },
+      { t: `Sur GitHub, ouvrez l'onglet « **Pull requests** » puis « **New pull request** ». Gardez **base : main** à gauche et choisissez **compare : collab-branch** à droite. GitHub affiche la différence de **file.txt**. Cliquez sur « **Create pull request** ».`,
+        note: { k: 'tip', t: `Après un push, GitHub affiche souvent un bandeau jaune « Compare & pull request » en haut de la page du dépôt : c'est un raccourci.` } },
+      { t: `Rédigez un titre et une description claire de votre demande, puis cliquez de nouveau sur « **Create pull request** ».`,
+        note: { k: 'info', t: `Le titre proposé par défaut est le message de votre commit. La demande est maintenant visible par tous les collaborateurs.` } },
+      { t: `**Propriétaire.** Vous recevez un e-mail et une notification. Ouvrez « **Pull requests** », puis la demande reçue. L'onglet « **Files changed** » montre les modifications ligne par ligne. Vous pouvez commenter, approuver ou demander des changements.`,
+        note: { k: 'info', t: `Vous pouvez discuter longuement d'une PR, demander des modifications, et même la refuser (« Close pull request »).` } },
+      { t: `**Propriétaire.** Si tout est bon, cliquez sur « **Merge pull request** » puis sur « **Confirm merge** ». Vous pouvez envoyer un message au collaborateur pour lui dire que sa demande a été acceptée.`,
+        why: `GitHub propose trois façons de fusionner : **merge commit** (par défaut, garde tout l'historique), **squash** (condense la branche en un seul commit) et **rebase** (rejoue les commits à la suite de main). Pour ce TP, gardez le choix par défaut.
+
+Après la fusion, le bouton « Delete branch » permet de supprimer la branche devenue inutile.` },
+      { t: `Vérifiez que la fusion s'est bien déroulée : la PR affiche « **Merged** » et **file.txt** sur **main** contient la nouvelle ligne. Récupérez le résultat sur votre machine.`,
+        cmd: `git switch main
+git pull
+cat file.txt`,
+        note: { k: 'tip', t: `Bravo, vous avez parcouru tout le cycle de travail d'une équipe : branche, commit, envoi, relecture, fusion. Passez au quiz et gardez l'aide-mémoire sous la main.` } }
+    ] }
+];
+
+var FLOW = [
+  { k: 'wd', name: 'Répertoire de travail', sub: 'vos fichiers', cmd: 'git add',
+    d: `Le dossier **TP1-Git** tel que vous le voyez dans l'explorateur. Vous y créez et modifiez vos fichiers avec votre éditeur. Git observe, mais n'enregistre rien tant que vous ne le demandez pas.`,
+    back: `Pour annuler une modification non indexée : [[git restore <fichier>]].` },
+  { k: 'idx', name: 'Index', sub: 'zone de transit', cmd: 'git commit',
+    d: `Une zone d'attente : vous y déposez les modifications qui feront partie du **prochain commit**. Cela permet de choisir précisément ce qui part ensemble, plutôt que de tout valider d'un bloc.`,
+    back: `Pour retirer un fichier de l'index : [[git restore --staged <fichier>]].` },
+  { k: 'repo', name: 'Dépôt local', sub: 'dossier .git', cmd: 'git push',
+    d: `L'**historique complet** des commits, sur votre machine, rangé dans le dossier caché **.git**. Chaque commit est un instantané signé de votre nom, daté, avec son message.`,
+    back: `Pour lire cet historique : [[git log]]. Pour changer de ligne de travail : [[git switch]].` },
+  { k: 'rem', name: 'Dépôt distant', sub: 'GitHub (origin)', cmd: '',
+    d: `La copie **partagée**, hébergée en ligne. Chaque membre de l'équipe y envoie ses commits et y récupère ceux des autres. Par convention, on l'appelle **origin**.`,
+    back: `Pour le récupérer : [[git clone <url>]] la première fois, puis [[git pull]] pour se mettre à jour. La flèche inverse part de GitHub vers vous.` }
+];
+
+var GLOSS = [
+  ['Dépôt (repository, repo)', `Dossier suivi par Git, avec tout son historique rangé dans .git.`],
+  ['Commit', `Instantané du projet à un moment donné, avec auteur, date, message et identifiant unique.`],
+  ['Hash (ID de commit)', `Code unique de 40 caractères qui identifie un commit. Les 7 premiers suffisent à le désigner.`],
+  ['Index (staging area)', `Zone de transit où l'on dépose les modifications avant de les valider.`],
+  ['Branche', `Ligne de travail parallèle. En réalité, une étiquette qui pointe vers un commit.`],
+  ['main', `Nom de la branche principale d'un dépôt (autrefois appelée master).`],
+  ['HEAD', `Marqueur « vous êtes ici » : la branche et le commit sur lesquels vous travaillez.`],
+  ['Fusion (merge)', `Intégration des commits d'une branche dans une autre.`],
+  ['Fast-forward', `Fusion simple où Git avance seulement l'étiquette, car l'autre branche n'a pas divergé.`],
+  ['Conflit', `Deux branches ont modifié la même zone d'un fichier : Git demande à l'humain de choisir.`],
+  ['Remote, origin', `Dépôt distant. « origin » est le surnom habituel du dépôt hébergé sur GitHub.`],
+  ['Push', `Envoie vos commits locaux vers le dépôt distant.`],
+  ['Pull', `Récupère les commits du dépôt distant et les intègre (fetch puis merge).`],
+  ['Clone', `Copie complète d'un dépôt distant sur votre machine, historique compris.`],
+  ['Pull Request (PR)', `Demande de fusion d'une branche dans une autre sur GitHub, avec relecture et discussion.`],
+  ['.gitignore', `Fichier qui liste ce que Git doit ignorer (fichiers secrets, générés, volumineux).`],
+  [`Jeton d'accès (PAT)`, `Chaîne secrète qui remplace le mot de passe pour utiliser Git avec GitHub en HTTPS.`]
+];
+
+var CHEAT = [
+  ['git init -b main', `Créer un dépôt avec la branche main`, '1'],
+  ['git config --global user.name "Nom"', `Définir son nom d'auteur`, '1'],
+  ['git status', `Voir l'état des fichiers`, '1'],
+  ['git add <fichier> | git add .', `Indexer un fichier, ou tout`, '2'],
+  ['git commit -m "message"', `Valider les fichiers indexés`, '2'],
+  ['git commit -a -m "message"', `Indexer les fichiers suivis modifiés et valider`, '6'],
+  ['git log --oneline', `Historique compact`, '2'],
+  ['git log --oneline --graph --all', `Historique de toutes les branches, en graphe`, '4'],
+  ['git diff', `Voir les modifications non indexées`, '3'],
+  ['git diff <id1> <id2>', `Comparer deux commits`, '3'],
+  ['git restore --staged <fichier>', `Retirer un fichier de l'index`, '2'],
+  ['git branch', `Lister les branches`, '4'],
+  ['git branch <nom>', `Créer une branche`, '4'],
+  ['git switch <nom>', `Changer de branche`, '4'],
+  ['git switch -c <nom>', `Créer une branche et s'y placer`, '6'],
+  ['git merge <nom>', `Fusionner <nom> dans la branche courante`, '5'],
+  ['git branch -d <nom>', `Supprimer une branche fusionnée`, '5'],
+  ['git merge --abort', `Annuler une fusion en conflit`, '6'],
+  ['git remote add origin <url>', `Lier le dépôt distant`, '7'],
+  ['git remote -v', `Afficher les dépôts distants`, '7'],
+  ['git push -u origin main', `Premier envoi, avec mémorisation du lien`, '7'],
+  ['git push', `Envoyer ses commits`, '8'],
+  ['git pull', `Récupérer et intégrer les commits distants`, '9'],
+  ['git clone <url>', `Copier un dépôt distant`, '9']
+];
+
+var ERRS = [
+  ['git: command not found', `Git n'est pas installé, ou le terminal a été ouvert avant l'installation.`, `Installez Git depuis git-scm.com, puis fermez et rouvrez le terminal.`],
+  ['fatal: not a git repository', `Vous n'êtes pas dans un dossier suivi par Git.`, `Tapez [[pwd]] pour savoir où vous êtes, puis [[cd]] vers le bon dossier. Si c'est un nouveau projet, lancez [[git init -b main]].`],
+  ['Author identity unknown — Please tell me who you are', `Git ne connaît pas votre nom et votre e-mail.`, `Lancez les deux commandes [[git config --global user.name]] et [[git config --global user.email]] de la Partie 1.`],
+  ['nothing to commit, working tree clean', `Il n'y a rien de nouveau à valider.`, `Vérifiez que vous avez bien **enregistré** le fichier dans votre éditeur avant de lancer [[git status]].`],
+  [`Une fenêtre d'éditeur (vim) s'ouvre après git commit`, `Vous avez oublié l'option -m.`, `Tapez [[:q!]] puis Entrée pour quitter sans rien enregistrer, puis recommencez avec [[git commit -m "message"]].`],
+  ['error: pathspec ... did not match any file(s) known to git', `Le nom de fichier ou de branche n'existe pas, ou contient une faute de frappe.`, `Utilisez [[ls]] ou [[git branch]] pour vérifier le nom exact. Git distingue majuscules et minuscules.`],
+  ['error: src refspec main does not match any', `Votre branche locale ne s'appelle pas main, ou n'a aucun commit.`, `Faites un commit, puis [[git branch -M main]], puis [[git push -u origin main]].`],
+  ['fatal: remote origin already exists', `Le surnom origin est déjà utilisé.`, `Changez son adresse : [[git remote set-url origin <url>]].`],
+  ['Authentication failed — Permission denied — 403', `GitHub refuse votre identité.`, `Utilisez un jeton valide (pas votre mot de passe), avec la permission Contents : Read and write. Dépôt d'un binôme : jeton classic avec la portée repo, ou gestionnaire d'identifiants.`],
+  ['rejected ... (fetch first) — non-fast-forward', `Le dépôt distant contient des commits que vous n'avez pas.`, `Lancez [[git pull]], résolvez un éventuel conflit, puis [[git push]].`],
+  ['hint: You have divergent branches and need to specify how to reconcile them', `Git demande comment combiner deux historiques divergents lors d'un pull.`, `Lancez une fois [[git config --global pull.rebase false]], puis refaites [[git pull]].`],
+  ['fatal: refusing to merge unrelated histories', `Les deux dépôts n'ont aucun commit en commun (par exemple un README créé sur GitHub).`, `Recréez le dépôt GitHub vide, ou lancez [[git pull origin main --allow-unrelated-histories]] si vous savez ce que vous faites.`],
+  ['CONFLICT (content): Merge conflict in ...', `Deux branches ont modifié la même ligne.`, `Voir la Partie 6. Pour tout annuler : [[git merge --abort]].`],
+  ['Your local changes would be overwritten by checkout', `Vous avez des modifications non validées qui seraient écrasées en changeant de branche.`, `Validez-les avec [[git commit]], ou annulez-les avec [[git restore <fichier>]], avant de changer de branche.`],
+  ['warning: LF will be replaced by CRLF', `Windows et Linux n'écrivent pas les fins de ligne de la même façon. Git vous prévient qu'il les convertit.`, `Sans conséquence pour ce TP : vous pouvez l'ignorer.`],
+  ['python: command not found', `Sur macOS et Linux, la commande s'appelle souvent python3.`, `Essayez [[python3 myinfo.py]]. Sous Windows, installez Python en cochant « Add python.exe to PATH ».`]
+];
+
+var QUIZ = [
+  { q: `Quelle commande transforme un dossier ordinaire en dépôt Git ?`, o: ['git start', 'git init', 'git new', 'git create'], a: 1, e: `**git init** crée le dossier caché .git et initialise le dépôt.` },
+  { q: `Que fait la commande git add myinfo.py ?`, o: [`Elle envoie le fichier sur GitHub`, `Elle place le fichier dans l'index, prêt pour le prochain commit`, `Elle crée le fichier myinfo.py`, `Elle enregistre le fichier dans l'historique`], a: 1, e: `**git add** prépare le fichier dans l'index. L'enregistrement dans l'historique se fait avec **git commit**, et l'envoi vers GitHub avec **git push**.` },
+  { q: `Vous êtes sur la branche main et vous lancez git merge test. Quelle branche reçoit les modifications ?`, o: ['test', 'main', 'Les deux', 'Aucune, il faut un push'], a: 1, e: `La fusion apporte les commits de **test** dans la branche **courante**, c'est-à-dire **main**.` },
+  { q: `Un conflit de fusion est signalé. Quelle suite d'actions est correcte ?`, o: [`Supprimer le dossier .git et recommencer`, `Éditer le fichier pour choisir le contenu, retirer les repères, puis git add et git commit`, `Faire git push --force`, `Relancer git merge jusqu'à ce que ça passe`], a: 1, e: `On résout à la main, on retire **<<<<<<<**, **=======** et **>>>>>>>**, on indexe, puis on valide. **git merge --abort** permet d'annuler.` },
+  { q: `Un fichier est déjà commité. Vous l'ajoutez ensuite à .gitignore. Que se passe-t-il ?`, o: [`Git cesse immédiatement de le suivre`, `Git le supprime du dépôt`, `Git continue de le suivre, car .gitignore n'agit que sur les fichiers non suivis`, `Git affiche une erreur à chaque commit`], a: 2, e: `Pour arrêter de suivre un fichier déjà commité : **git rm --cached <fichier>**, puis un commit.` },
+  { q: `Quelle est la différence entre git clone et git pull ?`, o: [`Aucune, ce sont des synonymes`, `clone copie un dépôt distant pour la première fois, pull met à jour une copie existante`, `pull envoie, clone récupère`, `clone ne fonctionne qu'avec des dépôts publics`], a: 1, e: `**git clone** crée votre copie locale. **git pull** la met à jour ensuite avec les nouveaux commits distants.` }
+];
+// DATA END
+// APP START
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  /* ---------- storage ---------- */
+  function lsGet(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* ignore */ } }
+
+  /* ---------- text helpers ---------- */
+  var DEF = { nom: 'VotreNom', email: 'votre.email@example.com', user: 'VotreUserGitHub', owner: 'PseudoDuBinome' };
+  var ME = lsGet('tp1-me', {});
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function ph(html) {
+    return html.replace(/%(NOM|EMAIL|USER|OWNER)%/g, function (_, k) { return '<span class="ph" data-k="' + k.toLowerCase() + '"></span>'; });
+  }
+  function inline(s) {
+    var h = esc(s);
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    h = h.replace(/\[\[([^\]]+)\]\]/g, '<code>$1</code>');
+    h = h.replace(/\{\{([^|}]+)\|([^}]+)\}\}/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    return ph(h);
+  }
+  function rich(s) {
+    return String(s).split(/\n\s*\n/).map(function (p) {
+      var lines = p.split('\n');
+      if (lines.every(function (l) { return /^- /.test(l); })) return '<ul>' + lines.map(function (l) { return '<li>' + inline(l.slice(2)) + '</li>'; }).join('') + '</ul>';
+      return '<p>' + inline(lines.join(' ')) + '</p>';
+    }).join('');
+  }
+  function paintPh() {
+    $$('.ph').forEach(function (el) {
+      var k = el.getAttribute('data-k');
+      var v = (ME[k] || '').trim();
+      el.textContent = v || DEF[k];
+      el.classList.toggle('on', !!v);
+    });
+  }
+  function codeBlock(kind, body, caption) {
+    var lines = body.replace(/^\n|\n$/g, '').split('\n');
+    var inner, cap, copy = true;
+    if (kind === 'cmd') {
+      inner = lines.map(function (l) {
+        if (!l.trim()) return '<span class="ln blank"></span>';
+        if (/^#/.test(l)) return '<span class="ln cm">' + ph(esc(l)) + '</span>';
+        return '<span class="ln cmd">' + ph(esc(l)) + '</span>';
+      }).join('');
+      cap = 'Terminal';
+    } else if (kind === 'out') {
+      inner = ph(esc(lines.join('\n')));
+      cap = 'Résultat attendu (le vôtre peut différer légèrement)';
+      copy = false;
+    } else {
+      inner = ph(esc(lines.join('\n')));
+      cap = caption || 'Fichier';
+    }
+    return '<figure class="code k-' + kind + '"><figcaption><span>' + esc(cap) + '</span>' +
+      (copy ? '<button class="copy" type="button">Copier</button>' : '') + '</figcaption><pre><code>' + inner + '</code></pre></figure>';
+  }
+  function noteHtml(n) {
+    var labels = { info: 'À savoir', warn: 'Attention', tip: 'Astuce', up: 'Bonne pratique actuelle' };
+    return '<aside class="note ' + n.k + '"><span class="k">' + labels[n.k] + '</span><div class="rich">' + rich(n.t) + '</div></aside>';
+  }
+
+  /* ---------- progress ---------- */
+  var DONE = lsGet('tp1-done', {});
+  var SECTIONS = [{ id: 'pre', long: PRE.title, short: 'Prépa', steps: PRE.steps.length, group: 'Préparer' },
+    { id: 'concepts', long: 'Git en quelques minutes', short: 'Notions', steps: 0 },
+    { id: 'lab', long: 'Bac à sable Git', short: 'Bac à sable', steps: 0 }]
+    .concat(PARTS.map(function (p) { return { id: p.id, long: p.n + '. ' + p.title, short: 'P' + p.n, steps: p.steps.length }; }))
+    .concat([{ id: 'revision', long: 'Quiz et aide-mémoire', short: 'Quiz', steps: 0 }]);
+  var TOTAL = SECTIONS.reduce(function (a, s) { return a + s.steps; }, 0);
+
+  function countDone(id) {
+    var n = 0;
+    Object.keys(DONE).forEach(function (k) { if (DONE[k] && k.indexOf(id + '-') === 0) n++; });
+    return n;
+  }
+  function refreshProgress() {
+    var total = 0;
+    SECTIONS.forEach(function (s) {
+      var li = $('#nav-' + s.id);
+      if (!li) return;
+      if (s.steps) {
+        var d = countDone(s.id);
+        total += d;
+        $('.cnt', li).textContent = d + '/' + s.steps;
+        li.classList.toggle('done', d === s.steps);
+      }
+    });
+    var pct = TOTAL ? Math.round(total * 100 / TOTAL) : 0;
+    $('#pct').textContent = pct + ' %';
+    $('#cnt').textContent = total + ' / ' + TOTAL + ' étapes';
+    $('#ring').setAttribute('stroke-dashoffset', String(131.95 * (1 - pct / 100)));
+  }
+
+  /* ---------- render steps ---------- */
+  function renderPart(p) {
+    var sec = document.createElement('section');
+    sec.className = 'part';
+    sec.id = p.id;
+    sec.setAttribute('aria-labelledby', p.id + '-h');
+    var h = '<div class="sec-head"><div class="eyebrow">' + esc(p.tag) + '</div><h2 id="' + p.id + '-h">' + esc(p.title) + '</h2><p>' + esc(p.goal) + '</p></div>';
+    h += '<div class="learn rich"><h3>À comprendre avant de commencer</h3>' + rich(p.learn) + '</div>';
+    h += '<ol class="steps">';
+    p.steps.forEach(function (s, i) {
+      var sid = p.id + '-' + (i + 1);
+      h += '<li class="step' + (DONE[sid] ? ' done' : '') + '" id="st-' + sid + '"><label class="chk"><input type="checkbox" data-sid="' + sid + '"' + (DONE[sid] ? ' checked' : '') + ' aria-label="Étape ' + (i + 1) + ' terminée"><span class="num">' + (i + 1) + '</span></label><div class="body">';
+      h += '<div class="t rich">' + rich(s.t) + '</div>';
+      if (s.file) h += codeBlock('file', s.file.body, s.file.name);
+      if (s.cmd) h += codeBlock('cmd', s.cmd);
+      if (s.out) h += codeBlock('out', s.out);
+      if (s.widget) h += '<div data-widget="' + s.widget + '"></div>';
+      if (s.note) h += noteHtml(s.note);
+      if (s.why) h += '<details class="why"><summary>Comprendre</summary><div class="in rich">' + rich(s.why) + '</div></details>';
+      if (s.q) h += '<details class="q"><summary><b>Question</b> ' + inline(s.q.q) + '</summary><div class="in rich">' + rich(s.q.a) + '</div></details>';
+      h += '</div></li>';
+    });
+    h += '</ol>';
+    if (p.trouble) {
+      h += '<details class="trouble"><summary>Quand ça ne marche pas</summary><div class="in">' +
+        p.trouble.map(function (t) { return '<div style="margin-top:12px"><code>' + esc(t.m) + '</code><div class="rich" style="margin-top:6px">' + rich(t.f) + '</div></div>'; }).join('') + '</div></details>';
+    }
+    sec.innerHTML = h;
+    return sec;
+  }
+
+  function buildSteps() {
+    var pre = renderPart({ id: PRE.id, tag: PRE.tag, title: PRE.title, goal: PRE.goal, learn: PRE.learn, steps: PRE.steps });
+    $('#slot-pre').appendChild(pre);
+    var slot = $('#slot-parts');
+    PARTS.forEach(function (p) { slot.appendChild(renderPart(p)); });
+    document.addEventListener('change', function (e) {
+      var t = e.target;
+      if (!t || !t.matches || !t.matches('input[data-sid]')) return;
+      var sid = t.getAttribute('data-sid');
+      DONE[sid] = t.checked ? 1 : 0;
+      if (!t.checked) delete DONE[sid];
+      lsSet('tp1-done', DONE);
+      var li = $('#st-' + sid);
+      if (li) li.classList.toggle('done', t.checked);
+      refreshProgress();
+    });
+  }
+
+  /* ---------- rail ---------- */
+  function buildRail() {
+    var ul = $('#railist'), h = '';
+    SECTIONS.forEach(function (s, i) {
+      if (i === 0) h += '<li class="sep">Préparer</li>';
+      if (s.id === 'p1') h += '<li class="sep">Les 10 parties</li>';
+      if (s.id === 'revision') h += '<li class="sep">Pour finir</li>';
+      h += '<li id="nav-' + s.id + '"><a href="#' + s.id + '"><span><span class="l-long">' + esc(s.long) + '</span><span class="l-short">' + esc(s.short) + '</span></span>' + (s.steps ? '<span class="cnt"></span>' : '') + '</a></li>';
+    });
+    ul.innerHTML = h;
+    var links = $$('a', ul);
+    function setCur(id) {
+      links.forEach(function (a) {
+        var on = a.getAttribute('href') === '#' + id;
+        if (on) { a.setAttribute('aria-current', 'true'); } else { a.removeAttribute('aria-current'); }
+      });
+      var cur = $('a[aria-current="true"]', ul);
+      if (cur && window.innerWidth < 980) {
+        var r = cur.getBoundingClientRect(), ur = ul.getBoundingClientRect();
+        if (r.left < ur.left || r.right > ur.right) ul.scrollTo({ left: cur.offsetLeft - 40, behavior: 'smooth' });
+      }
+    }
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) setCur(en.target.id); });
+      }, { rootMargin: '-15% 0px -75% 0px' });
+      SECTIONS.forEach(function (s) { var el = document.getElementById(s.id); if (el) io.observe(el); });
+    }
+    setCur('pre');
+  }
+
+  /* ---------- copy ---------- */
+  function figText(fig) {
+    var lns = $$('.ln', fig);
+    if (lns.length) return lns.map(function (x) { return x.textContent; }).join('\n');
+    return $('code', fig).textContent;
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.copy');
+    if (!b) return;
+    var fig = b.closest('.code');
+    var text = figText(fig);
+    var done = function (label, ok) {
+      b.textContent = label;
+      b.classList.toggle('ok', !!ok);
+      setTimeout(function () { b.textContent = 'Copier'; b.classList.remove('ok'); }, 1800);
+    };
+    var fallback = function () {
+      try {
+        var r = document.createRange();
+        r.selectNodeContents($('code', fig));
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch (err) { /* ignore */ }
+      done('Sélectionné : Ctrl+C', false);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(function () { done('Copié', true); }, fallback);
+    } catch (err) { fallback(); }
+  });
+
+  /* ---------- personalisation ---------- */
+  function initMe() {
+    ['nom', 'email', 'user', 'owner'].forEach(function (k) {
+      var input = $('#f-' + k);
+      input.value = ME[k] || '';
+      input.addEventListener('input', function () {
+        ME[k] = input.value;
+        lsSet('tp1-me', ME);
+        paintPh();
+        if (window.__labIdent) window.__labIdent();
+      });
+    });
+    $('#meform').addEventListener('submit', function (e) { e.preventDefault(); });
+  }
+
+  /* ---------- theme + reset ---------- */
+  function initTools() {
+    var modes = ['auto', 'light', 'dark'], names = { auto: 'Auto', light: 'Clair', dark: 'Sombre' }, labels = { auto: 'automatique', light: 'clair', dark: 'sombre' };
+    var cur = lsGet('tp1-theme', 'auto');
+    function apply() {
+      var root = document.documentElement;
+      if (cur === 'auto') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', cur);
+      $('#theme').textContent = names[cur];
+      $('#theme').setAttribute('aria-label', 'Changer de thème, actuellement ' + labels[cur]);
+    }
+    apply();
+    $('#theme').addEventListener('click', function () {
+      cur = modes[(modes.indexOf(cur) + 1) % 3];
+      lsSet('tp1-theme', cur);
+      apply();
+    });
+    var rb = $('#resetp'), armed = false, timer;
+    rb.addEventListener('click', function () {
+      if (!armed) {
+        armed = true; rb.textContent = 'Sûr ?';
+        timer = setTimeout(function () { armed = false; rb.textContent = 'Effacer'; }, 3500);
+        return;
+      }
+      clearTimeout(timer); armed = false; rb.textContent = 'Effacer';
+      DONE = {}; lsSet('tp1-done', DONE);
+      $$('input[data-sid]').forEach(function (i) { i.checked = false; });
+      $$('.step.done').forEach(function (s) { s.classList.remove('done'); });
+      refreshProgress();
+    });
+  }
+
+  /* ---------- concepts ---------- */
+  function initConcepts() {
+    var flow = $('#flow'), panel = $('#flowpanel'), h = '';
+    FLOW.forEach(function (f, i) {
+      h += '<li class="st"><button class="stage" type="button" data-i="' + i + '" aria-pressed="' + (i === 0) + '"><b>' + esc(f.name) + '</b><span>' + esc(f.sub) + '</span></button></li>';
+      if (i < FLOW.length - 1) h += '<li class="cn" aria-hidden="true"><div class="conn"><i>→</i><span>' + esc(f.cmd) + '</span></div></li>';
+    });
+    flow.innerHTML = h;
+    function show(i) {
+      var f = FLOW[i];
+      $$('.stage', flow).forEach(function (b, j) { b.setAttribute('aria-pressed', String(i === j)); });
+      panel.innerHTML = '<div class="rich">' + rich(f.d) + '</div><div class="back rich">' + rich(f.back) + '</div>';
+    }
+    flow.addEventListener('click', function (e) {
+      var b = e.target.closest('.stage');
+      if (b) show(Number(b.getAttribute('data-i')));
+    });
+    show(0);
+
+    var gl = $('#glos'), gq = $('#gq'), gnone = $('#gnone');
+    gl.innerHTML = GLOSS.map(function (g) { return '<li data-s="' + esc((g[0] + ' ' + g[1]).toLowerCase()) + '"><b>' + esc(g[0]) + '</b><span>' + esc(g[1]) + '</span></li>'; }).join('');
+    gq.addEventListener('input', function () {
+      var q = gq.value.trim().toLowerCase(), n = 0;
+      $$('li', gl).forEach(function (li) { var on = !q || li.getAttribute('data-s').indexOf(q) !== -1; li.hidden = !on; if (on) n++; });
+      gnone.hidden = n > 0;
+    });
+  }
+
+  /* ---------- revision ---------- */
+  function initRevision() {
+    var qz = $('#quiz'), score = $('#score'), answered = {}, good = 0;
+    qz.innerHTML = QUIZ.map(function (q, i) {
+      return '<div class="qcard" data-i="' + i + '"><h3>' + (i + 1) + '. ' + esc(q.q) + '</h3><div class="opts">' +
+        q.o.map(function (o, j) { return '<button class="opt" type="button" data-j="' + j + '">' + esc(o) + '</button>'; }).join('') +
+        '</div><div class="qfb rich" aria-live="polite"></div></div>';
+    }).join('');
+    qz.addEventListener('click', function (e) {
+      var b = e.target.closest('.opt');
+      if (!b) return;
+      var card = b.closest('.qcard'), i = Number(card.getAttribute('data-i')), j = Number(b.getAttribute('data-j'));
+      if (answered[i] !== undefined) return;
+      answered[i] = j;
+      var q = QUIZ[i];
+      $$('.opt', card).forEach(function (o, k) {
+        if (k === q.a) o.classList.add('right');
+        else if (k === j) o.classList.add('wrong');
+      });
+      $('.qfb', card).innerHTML = (j === q.a ? '<strong>Exact.</strong> ' : '<strong>Pas tout à fait.</strong> ') + inline(q.e);
+      if (j === q.a) good++;
+      var n = Object.keys(answered).length;
+      score.textContent = n === QUIZ.length ? 'Score : ' + good + ' / ' + QUIZ.length : n + ' / ' + QUIZ.length + ' réponses';
+    });
+
+    var tb = $('#cheat tbody'), cq = $('#cq');
+    tb.innerHTML = CHEAT.map(function (r) {
+      return '<tr data-s="' + esc((r[0] + ' ' + r[1]).toLowerCase()) + '"><td class="cmdcell"><code>' + esc(r[0]) + '</code></td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>';
+    }).join('');
+    cq.addEventListener('input', function () {
+      var q = cq.value.trim().toLowerCase();
+      $$('tr', tb).forEach(function (tr) { tr.hidden = !!q && tr.getAttribute('data-s').indexOf(q) === -1; });
+    });
+
+    var eh = $('#errs'), eq = $('#eq'), en = $('#enone');
+    eh.innerHTML = ERRS.map(function (r) {
+      return '<details class="why" data-s="' + esc((r[0] + ' ' + r[1] + ' ' + r[2]).toLowerCase()) + '"><summary><code>' + esc(r[0]) + '</code></summary><div class="in rich"><p><strong>Ce que cela signifie.</strong> ' + inline(r[1]) + '</p><p><strong>Que faire.</strong> ' + inline(r[2]) + '</p></div></details>';
+    }).join('');
+    eq.addEventListener('input', function () {
+      var q = eq.value.trim().toLowerCase(), n = 0;
+      $$('details', eh).forEach(function (d) {
+        var on = !q || d.getAttribute('data-s').indexOf(q) !== -1;
+        d.hidden = !on;
+        if (on) n++;
+        if (q && on) d.open = true;
+      });
+      en.hidden = n > 0;
+    });
+  }
+
+  /* ---------- widgets inside steps ---------- */
+  function initAuth(host) {
+    var tabs = [
+      { k: 'gcm', l: `Gestionnaire d'identifiants`, b: `Le plus simple, inclus avec **Git pour Windows**.
+
+Au premier [[git push]], une fenêtre s'ouvre. Choisissez « **Sign in with your browser** », connectez-vous à GitHub et autorisez l'accès. Rien à copier, et l'identifiant est mémorisé.
+
+Cette méthode fonctionne aussi pour les dépôts de vos binômes (Partie 9).
+
+Sous macOS et Linux, le gestionnaire n'est pas toujours installé : préférez l'onglet suivant.` },
+      { k: 'gh', l: 'GitHub CLI', b: `Un petit outil officiel qui se connecte pour vous. Installez-le depuis {{cli.github.com|https://cli.github.com/}}, puis lancez :
+
+__CMD__
+
+Répondez : **GitHub.com**, protocole **HTTPS**, « Authenticate Git with your GitHub credentials » : **Yes**, puis « Login with a web browser ». Suivez les instructions à l'écran.`, cmd: 'gh auth login' },
+      { k: 'pat', l: `Jeton d'accès (PAT)`, b: `Si Git vous demande un mot de passe, collez un **jeton** à la place. Le mot de passe de votre compte est refusé.
+
+**Pour vos propres dépôts (jeton fine-grained)** :
+- Sur GitHub : photo de profil, Settings, Developer settings, Personal access tokens, **Fine-grained tokens**, « Generate new token ».
+- Donnez un nom au jeton et une **date d'expiration** courte.
+- **Resource owner** : votre compte. **Repository access** : « Only select repositories », puis **repo-tp1**.
+- Section **Permissions**, « Add permissions », cochez **Contents** avec l'accès **Read and write**.
+- Cliquez sur « Generate token » et **copiez-le tout de suite** : il ne sera plus jamais affiché.
+- Dans le terminal, saisissez votre pseudo GitHub comme nom d'utilisateur, et collez le jeton comme mot de passe.
+
+**Pour le dépôt d'un binôme (Partie 9)** : les jetons fine-grained ne fonctionnent pas sur les dépôts dont vous n'êtes que collaborateur. Créez un jeton **Tokens (classic)** avec la portée **repo**.
+
+Ne partagez jamais un jeton et ne l'écrivez dans aucun fichier du dépôt. S'il fuit, révoquez-le immédiatement dans les paramètres GitHub.` }
+    ];
+    var list = '<div class="tablist" role="tablist" aria-label="Méthodes d\'authentification">' +
+      tabs.map(function (t, i) { return '<button role="tab" type="button" id="tab-' + t.k + '" aria-controls="pan-' + t.k + '" aria-selected="' + (i === 0) + '" tabindex="' + (i === 0 ? 0 : -1) + '">' + esc(t.l) + '</button>'; }).join('') + '</div>';
+    var panels = tabs.map(function (t, i) {
+      var body = rich(t.b.replace('__CMD__', '@@CMD@@'));
+      if (t.cmd) body = body.replace('<p>@@CMD@@</p>', codeBlock('cmd', t.cmd));
+      return '<div class="tabpanel rich" role="tabpanel" id="pan-' + t.k + '" aria-labelledby="tab-' + t.k + '"' + (i ? ' hidden' : '') + '>' + body + '</div>';
+    }).join('');
+    host.innerHTML = '<div class="tabs">' + list + panels + '</div>';
+    var btns = $$('[role="tab"]', host);
+    function select(i) {
+      btns.forEach(function (b, j) {
+        b.setAttribute('aria-selected', String(i === j));
+        b.tabIndex = i === j ? 0 : -1;
+        $('#pan-' + tabs[j].k, host).hidden = i !== j;
+      });
+      btns[i].focus();
+    }
+    btns.forEach(function (b, i) {
+      b.addEventListener('click', function () { select(i); });
+      b.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowRight') { e.preventDefault(); select((i + 1) % btns.length); }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); select((i + btns.length - 1) % btns.length); }
+      });
+    });
+  }
+
+  function initConflict(host) {
+    var before = 'print("-----------------------------------")';
+    var cur = 'print("Je suis etudiant en MP2-IoT")', inc = 'print("Je suis etudiant en MP2-GL")', after = 'print("Ceci est mon 1er TP DevOps")';
+    var state = 'open';
+    function line(cls, t) { return '<span class="cl ' + cls + '">' + esc(t) + '</span>'; }
+    function draw() {
+      var code, msg = '', act = '';
+      if (state === 'open') {
+        code = line('', before) + line('mk', '<<<<<<< HEAD') + line('cur', cur) + line('mk', '=======') + line('inc', inc) + line('mk', '>>>>>>> work') + line('', after);
+        act = '<button class="btn" type="button" data-a="cur">Garder la version actuelle (main)</button><button class="btn primary" type="button" data-a="inc">Garder la version entrante (work)</button><button class="btn" type="button" data-a="both">Garder les deux</button>';
+        msg = 'Essayez : quel bouton produit le fichier attendu à la fin de cette étape ?';
+      } else {
+        var res = state === 'cur' ? [cur] : state === 'inc' ? [inc] : [cur, inc];
+        code = line('', before) + res.map(function (r) { return line('res', r); }).join('') + line('', after);
+        act = '<button class="btn" type="button" data-a="open">Recommencer</button>';
+        if (state === 'inc') msg = '<strong>C\'est le résultat attendu.</strong> Le fichier ne contient plus de repères. Il reste à faire <code>git add myinfo.py</code> puis <code>git commit</code>.';
+        else if (state === 'cur') msg = 'Valide, mais vous avez écarté le travail de la branche <strong>work</strong>. Pour cette étape, on veut garder la spécialité <strong>GL</strong> : essayez l\'autre bouton.';
+        else msg = 'Valide aussi : les deux lignes sont gardées. Ici, cela donne deux spécialités contradictoires, ce n\'est pas ce qu\'on cherche. Garder les deux est utile quand les deux changements sont compatibles (par exemple deux fonctions différentes).';
+      }
+      host.innerHTML = '<div class="conf"><div class="conf-bar"><span>Simulation : <strong>myinfo.py</strong>' + (state === 'open' ? ' (en conflit)' : ' (résolu)') + '</span><span>comme les boutons de VS Code</span></div><div class="conf-code" role="group" aria-label="Contenu du fichier">' + code + '</div><div class="conf-act">' + act + '</div><div class="conf-msg" aria-live="polite">' + msg + '</div></div>';
+    }
+    host.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-a]');
+      if (!b) return;
+      state = b.getAttribute('data-a');
+      draw();
+    });
+    draw();
+  }
+
+  /* ---------- sandbox ---------- */
+  var sb = createSandbox();
+  function initLab() {
+    var tout = $('#tout'), tin = $('#tin'), hist = [], hi = 0;
+    window.__labIdent = function () { sb.setIdent(ME.nom, ME.email); };
+    window.__labIdent();
+
+    var MISSIONS = [
+      ['Faire un premier commit', function (s) { return s.commitCount >= 1; }],
+      ['Créer une branche', function (s) { return s.events.indexOf('branch') !== -1; }],
+      ['Valider sur une autre branche que main', function (s) { return s.events.indexOf('commit:other') !== -1; }],
+      ['Fusionner en fast-forward', function (s) { return s.events.indexOf('merge-ff') !== -1; }],
+      ['Provoquer un commit de fusion', function (s) { return s.events.indexOf('merge-commit') !== -1; }]
+    ];
+    var CHIPS = [
+      { l: 'Modifier myinfo.py', edit: 1 },
+      { l: 'git status', c: 'git status', run: 1 },
+      { l: 'git add .', c: 'git add .', run: 1 },
+      { l: 'git commit -m "…"', c: 'git commit -m ""', caret: -1 },
+      { l: 'git log --oneline --all', c: 'git log --oneline --all', run: 1 },
+      { l: 'git branch …', c: 'git branch ' },
+      { l: 'git switch …', c: 'git switch ' },
+      { l: 'git switch -c …', c: 'git switch -c ' },
+      { l: 'git merge …', c: 'git merge ' },
+      { l: 'git diff', c: 'git diff', run: 1 }
+    ];
+    $('#chips').innerHTML = CHIPS.map(function (c, i) { return '<button type="button" data-i="' + i + '"' + (c.edit ? ' class="edit"' : '') + '>' + esc(c.l) + '</button>'; }).join('');
+
+    function put(cmd, out, sys) {
+      if (cmd !== null) { var d = document.createElement('div'); d.className = 'c'; d.textContent = cmd; tout.appendChild(d); }
+      if (out) { var p = document.createElement('div'); p.className = 'o' + (sys ? ' sys' : ''); p.textContent = out; tout.appendChild(p); }
+      tout.scrollTop = tout.scrollHeight;
+    }
+    function welcome() {
+      put(null, 'Le dépôt est déjà initialisé (git init fait) et myinfo.py existe, mais Git ne le suit pas encore. Tapez help pour la liste des commandes, ou suivez les missions ci-dessus.', true);
+    }
+    function exec(line) {
+      var r = sb.run(line);
+      if (r.clear) { tout.innerHTML = ''; } else put(line, r.out);
+      hist.push(line); hi = hist.length;
+      refresh();
+    }
+
+    function drawZones(s) {
+      var wd = $('#z-wd .body'), idx = $('#z-idx .body'), tag = $('#z-wd-s');
+      function files(lines, ref, cls) {
+        return '<div style="font:.7rem var(--f-mono);color:var(--muted)">myinfo.py</div>' + lines.map(function (l) {
+          var on = ref === null ? true : ref.indexOf(l) === -1;
+          return '<div class="fl' + (on ? ' ' + cls : '') + '">' + esc(l) + '</div>';
+        }).join('');
+      }
+      if (!s.idx) { tag.textContent = 'non suivi'; wd.innerHTML = files(s.wd, null, 'chg'); }
+      else { tag.textContent = 'suivi'; wd.innerHTML = files(s.wd, s.idx, 'chg'); }
+      if (!s.idx) idx.innerHTML = '<div class="none">Vide. Rien n\'est indexé.</div>';
+      else idx.innerHTML = files(s.idx, s.head, 'stg');
+    }
+
+    var LANE = ['var(--l0)', 'var(--l1)', 'var(--l2)', 'var(--l3)'];
+    function drawGraph() {
+      var L = sb.layout(), el = $('#graph');
+      if (!L.commits.length) { el.innerHTML = '<p class="empty">Aucun commit pour l\'instant. Essayez <code>git add myinfo.py</code> puis <code>git commit -m "Premier commit"</code>.</p>'; return; }
+      var DX = 108, DY = 62, X0 = 56;
+      var byCommit = {}, maxLab = 1;
+      Object.keys(L.branches).sort().forEach(function (b) {
+        var id = L.branches[b];
+        if (!id) return;
+        (byCommit[id] = byCommit[id] || []).push(b);
+      });
+      Object.keys(byCommit).forEach(function (id) {
+        var arr = byCommit[id];
+        arr.sort(function (a, b) { return (b === L.head) - (a === L.head) || (a < b ? -1 : 1); });
+        maxLab = Math.max(maxLab, arr.length);
+      });
+      var Y0 = 22 + maxLab * 22;
+      var W = X0 * 2 + (L.commits.length - 1) * DX, H = Y0 + (L.lanes - 1) * DY + 56;
+      var pos = {};
+      L.commits.forEach(function (c, i) { pos[c.id] = { x: X0 + i * DX, y: Y0 + c.lane * DY, lane: c.lane }; });
+      var svg = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc('Historique : ' + L.commits.length + ' commit(s), branche courante ' + L.head) + '">';
+      L.commits.forEach(function (c) {
+        c.parents.forEach(function (p, k) {
+          var a = pos[p], b = pos[c.id];
+          if (!a) return;
+          var col = LANE[(k === 0 ? b.lane : a.lane) % 4];
+          var d = a.y === b.y ? 'M' + a.x + ' ' + a.y + 'L' + b.x + ' ' + b.y : 'M' + a.x + ' ' + a.y + 'C' + (a.x + DX * 0.55) + ' ' + a.y + ' ' + (b.x - DX * 0.55) + ' ' + b.y + ' ' + b.x + ' ' + b.y;
+          svg += '<path d="' + d + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-linecap="round"/>';
+        });
+      });
+      var headId = L.branches[L.head];
+      L.commits.forEach(function (c) {
+        var p = pos[c.id], col = LANE[p.lane % 4];
+        if (c.id === headId) svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="14" fill="none" stroke="var(--ink)" stroke-width="2"/>';
+        svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="9" fill="' + col + '" stroke="var(--surface)" stroke-width="3"><title>' + esc(c.short + ' ' + c.msg) + '</title></circle>';
+        svg += '<text x="' + p.x + '" y="' + (p.y + 28) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="10.5" fill="var(--muted)">' + c.short + '</text>';
+        var m = c.msg.length > 15 ? c.msg.slice(0, 14) + '…' : c.msg;
+        svg += '<text x="' + p.x + '" y="' + (p.y + 42) + '" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-size="10.5" fill="var(--ink)">' + esc(m) + '</text>';
+        (byCommit[c.id] || []).forEach(function (name, j) {
+          var isHead = name === L.head, label = (isHead ? 'HEAD → ' : '') + name;
+          var w = label.length * 6.6 + 16, py = p.y - 22 - (j + 1) * 22 + 22;
+          svg += '<rect x="' + (p.x - w / 2) + '" y="' + (p.y - 18 - (j + 1) * 22) + '" width="' + w + '" height="19" rx="6" fill="' + (isHead ? 'var(--ink)' : 'var(--surface)') + '" stroke="' + (isHead ? 'var(--ink)' : 'var(--line)') + '"/>';
+          svg += '<text x="' + p.x + '" y="' + (p.y - 18 - (j + 1) * 22 + 13.5) + '" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="11" fill="' + (isHead ? 'var(--bg)' : 'var(--ink)') + '">' + esc(label) + '</text>';
+        });
+      });
+      svg += '</svg>';
+      el.innerHTML = svg;
+      el.scrollLeft = el.scrollWidth;
+    }
+
+    function drawMissions(s) {
+      $('#missions').innerHTML = MISSIONS.map(function (m) { return '<li class="' + (m[1](s) ? 'on' : '') + '">' + esc(m[0]) + '</li>'; }).join('');
+    }
+    function refresh() {
+      var s = sb.snapshot();
+      drawZones(s); drawGraph(); drawMissions(s);
+    }
+
+    $('#tform').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = tin.value;
+      if (!v.trim()) return;
+      tin.value = '';
+      exec(v);
+    });
+    tin.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowUp') { e.preventDefault(); if (hi > 0) { hi--; tin.value = hist[hi]; } }
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (hi < hist.length - 1) { hi++; tin.value = hist[hi]; } else { hi = hist.length; tin.value = ''; } }
+    });
+    $('#chips').addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b) return;
+      var c = CHIPS[Number(b.getAttribute('data-i'))];
+      if (c.edit) { put('# modification dans l\'éditeur', sb.edit()); refresh(); return; }
+      if (c.run) { exec(c.c); return; }
+      tin.value = c.c;
+      tin.focus();
+      var pos = c.caret === -1 ? c.c.length - 1 : c.c.length;
+      try { tin.setSelectionRange(pos, pos); } catch (err) { /* ignore */ }
+    });
+    $('#labreset').addEventListener('click', function () {
+      sb.reset(); hist = []; hi = 0; tout.innerHTML = ''; welcome(); refresh();
+    });
+    welcome(); refresh();
+  }
+
+  /* ---------- boot ---------- */
+  buildSteps();
+  buildRail();
+  initMe();
+  initTools();
+  initConcepts();
+  initRevision();
+  $$('[data-widget="auth"]').forEach(initAuth);
+  $$('[data-widget="conflict"]').forEach(initConflict);
+  initLab();
+  paintPh();
+  refreshProgress();
+})();
+// APP END
+</script>
+
+</body></html>
